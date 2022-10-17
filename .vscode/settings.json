@@ -1,0 +1,5 @@
+{
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "%vcpkg_root%/current/scripts/buildsystems/vcpkg.cmake"
+    }
+}
