@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+void processInput(GLFWwindow *window);
+
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -29,9 +31,11 @@ int main() {
 
   // 设置窗口变化时的回调
   glfwSetFramebufferSizeCallback(
-      window, [](GLFWwindow* window, int w, int h) { glViewport(0, 0, w, h); });
+      window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
+    // 处理输入
+    processInput(window);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
@@ -40,4 +44,10 @@ int main() {
 
   // 释放资源
   glfwTerminate();
+}
+
+void processInput(GLFWwindow *window) {
+  // ESC时退出
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
 }
