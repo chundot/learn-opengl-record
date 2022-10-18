@@ -5,6 +5,24 @@
 
 void processInput(GLFWwindow *window);
 
+// 片段着色器源码
+const char *fragmentShaderSource =
+    "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "}\n\0";
+
+// 顶点着色器源代码
+const GLchar *vertexShaderSource =
+    "#version 330 core\n"
+    "layout (location = 0) in vec3 aPos;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "}\0";
+
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -32,15 +50,61 @@ int main() {
   // 设置窗口变化时的回调
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
+
+  GLfloat vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
+                        0.0f,  0.0f,  0.5f, 0.0f};
+
+  // 编译着色器
+  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+  glCompileShader(vertexShader);
+
+  // 编译片段着色器
+  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+  glCompileShader(fragmentShader);
+
+  // 创建着色器程序并附加着色器
+  GLuint shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(shaderProgram, fragmentShader);
+  // 链接对象
+  glLinkProgram(shaderProgram);
+
+  // 删除着色器
+  glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);
+
+  // 初始化
+  GLuint VAO, VBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glBindVertexArray(VAO);
+  // 顶点数组复制到缓冲中
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // 解析顶点数据
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 处理输入
     processInput(window);
+    // 颜色
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    // 使用着色器程序绘制
+    glUseProgram(shaderProgram);
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
     glfwPollEvents();
   }
+
+  glDeleteProgram(shaderProgram);
 
   // 释放资源
   glfwTerminate();
