@@ -1,5 +1,6 @@
 ﻿// #define GLFW_INCLUDE_NONE
 #include "shader.hpp"
+#include <cstdlib>
 #include <iostream>
 #include "stb_image.hpp"
 #include <glm/glm.hpp>
@@ -110,11 +111,6 @@ int main() {
 
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
-  // 矩阵变换
-  glm::mat4 t(1);
-  t = glm::rotate(t, glm::radians(90.0f), glm::vec3(0, 0, 1));
-  t = glm::scale(t, glm::vec3(.5f, .5f, .5f));
-  myShader.setU("transform", glm::value_ptr(t));
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 处理输入
@@ -126,6 +122,12 @@ int main() {
     myShader.use();
     // myShader.setFloat("offset", .5f);
     myShader.setU("mixValue", mixValue);
+    // 旋转及平移
+    glm::mat4 trans(1);
+    trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+    trans =
+        glm::rotate(trans, (GLfloat)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+    myShader.setU("transform", glm::value_ptr(trans));
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
@@ -135,6 +137,12 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glm::mat4 trans1(1);
+    trans1 = glm::translate(trans1, glm::vec3(-.5f, .5f, 0));
+    auto scaleVal = abs(sin(glfwGetTime()));
+    trans1 = glm::scale(trans1, glm::vec3(scaleVal, scaleVal, scaleVal));
+    myShader.setU("transform", glm::value_ptr(trans1));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // 绘制
     glfwSwapBuffers(window);
