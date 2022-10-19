@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stb_image.h>
 
 using namespace std;
 
