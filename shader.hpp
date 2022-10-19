@@ -77,14 +77,20 @@ class Shader {
   // 使用程序
   void use() { glUseProgram(id); }
   // uniform工具
-  void setBool(const string &name, bool value) const {
+  void setU(const string &name, bool value) const {
     glUniform1i(glGetUniformLocation(id, name.c_str()), value);
   }
-  void setInt(const string &name, int value) const {
+  void setU(const string &name, int value) const {
     glUniform1i(glGetUniformLocation(id, name.c_str()), value);
   }
-  void setFloat(const string &name, float value) const {
+  void setU(const string &name, float value) const {
     glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+  }
+  void setU(const string &name, float x, float y, float z, float w) const {
+    glUniform4f(glGetUniformLocation(id, name.c_str()), x, y, z, w);
+  }
+  void setU(const string &name, float *m) const {
+    glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, m);
   }
 };
 #endif

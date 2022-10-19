@@ -8,6 +8,8 @@ add_executable(learn-opengl-record main.cpp)
 
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(learn-opengl-record PRIVATE glm::glm)
 target_link_libraries(learn-opengl-record PRIVATE glfw)
 target_link_libraries(learn-opengl-record PRIVATE glad::glad)
 

@@ -2,6 +2,9 @@
 #include "shader.hpp"
 #include <iostream>
 #include "stb_image.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 void processInput(GLFWwindow *window);
 
@@ -106,7 +109,12 @@ int main() {
   genTex(texture1, "../../images/awesomeface.png", GL_RGBA, true);
 
   myShader.use();
-  myShader.setInt("ourTexture0", 0), myShader.setInt("ourTexture1", 1);
+  myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
+  // 矩阵变换
+  glm::mat4 t(1);
+  t = glm::rotate(t, glm::radians(90.0f), glm::vec3(0, 0, 1));
+  t = glm::scale(t, glm::vec3(.5f, .5f, .5f));
+  myShader.setU("transform", glm::value_ptr(t));
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 处理输入
@@ -117,7 +125,7 @@ int main() {
     // 使用着色器程序绘制
     myShader.use();
     // myShader.setFloat("offset", .5f);
-    myShader.setFloat("mixValue", mixValue);
+    myShader.setU("mixValue", mixValue);
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
