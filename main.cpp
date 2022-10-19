@@ -1,31 +1,8 @@
 // #define GLFW_INCLUDE_NONE
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "shader.hpp"
 #include <iostream>
 
 void processInput(GLFWwindow *window);
-
-// 片段着色器源码
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "in vec3 ourColor; \n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(ourColor, 1.0);\n"
-    "}\n\0";
-
-// 顶点着色器源代码
-const GLchar *vertexShaderSource =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "layout (location = 1) in vec3 aColor;\n"
-    "out vec3 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   ourColor = aColor;"
-    "}\0";
 
 int main() {
   glfwInit();
@@ -62,26 +39,8 @@ int main() {
       0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // 顶部
   };
 
-  // 编译着色器
-  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-  glCompileShader(vertexShader);
-
-  // 编译片段着色器
-  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-  glCompileShader(fragmentShader);
-
-  // 创建着色器程序并附加着色器
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  // 链接对象
-  glLinkProgram(shaderProgram);
-
-  // 删除着色器
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
+  // 着色器
+  Shader myShader("../../shaders/shader.vs", "../../shaders/shader.fs");
 
   // 初始化
   GLuint VAO, VBO;
@@ -108,9 +67,9 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     // 使用着色器程序绘制
-    glUseProgram(shaderProgram);
+    myShader.use();
     // 变色
-    GLint vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+    GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = sin(glfwGetTime()) / 2.0f + .5f;
     glUniform4f(vertexColorLocation, 0.0f, greenVal, 0.0f, 1.0f);
     glBindVertexArray(VAO);
@@ -121,7 +80,7 @@ int main() {
     glfwPollEvents();
   }
 
-  glDeleteProgram(shaderProgram);
+  glDeleteProgram(myShader.id);
 
   // 释放资源
   glfwTerminate();
