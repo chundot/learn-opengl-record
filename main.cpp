@@ -9,19 +9,22 @@ void processInput(GLFWwindow *window);
 const char *fragmentShaderSource =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
-    "uniform vec4 ourColor; \n"
+    "in vec3 ourColor; \n"
     "void main()\n"
     "{\n"
-    "   FragColor = ourColor;\n"
+    "   FragColor = vec4(ourColor, 1.0);\n"
     "}\n\0";
 
 // 顶点着色器源代码
 const GLchar *vertexShaderSource =
     "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec3 aColor;\n"
+    "out vec3 ourColor;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   ourColor = aColor;"
     "}\0";
 
 int main() {
@@ -52,8 +55,12 @@ int main() {
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
 
-  GLfloat vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
-                        0.0f,  0.0f,  0.5f, 0.0f};
+  GLfloat vertices[] = {
+      // 位置              // 颜色
+      0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // 右下
+      -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // 左下
+      0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // 顶部
+  };
 
   // 编译着色器
   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -85,8 +92,13 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   // 解析顶点数据
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  // 位置属性
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
+  // 颜色属性
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
