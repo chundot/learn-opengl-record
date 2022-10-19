@@ -68,6 +68,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
     // 使用着色器程序绘制
     myShader.use();
+    myShader.setFloat("offset", .5f);
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = sin(glfwGetTime()) / 2.0f + .5f;
