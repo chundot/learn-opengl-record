@@ -5,6 +5,8 @@
 
 void processInput(GLFWwindow *window);
 
+float mixValue = .2f;
+
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -115,6 +117,7 @@ int main() {
     // 使用着色器程序绘制
     myShader.use();
     // myShader.setFloat("offset", .5f);
+    myShader.setFloat("mixValue", mixValue);
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
@@ -145,4 +148,8 @@ void processInput(GLFWwindow *window) {
   // ESC时退出
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+  // 修改纹理可见度
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) mixValue += .001f;
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) mixValue -= .001f;
+  mixValue = max(0.0f, min(1.0f, mixValue));
 }
