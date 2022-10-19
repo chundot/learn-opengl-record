@@ -13,6 +13,13 @@ const char *fragmentShaderSource =
     "{\n"
     "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n\0";
+const char *fragmentYelloShaderSource =
+    "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "   FragColor = vec4(1.0f, 0.8f, 0.0f, 1.0f);\n"
+    "}\n\0";
 
 // 顶点着色器源代码
 const GLchar *vertexShaderSource =
@@ -61,19 +68,27 @@ int main() {
 
   // 编译片段着色器
   GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  GLuint fragmentYelloShader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
   glCompileShader(fragmentShader);
+  glShaderSource(fragmentYelloShader, 1, &fragmentYelloShaderSource, NULL);
+  glCompileShader(fragmentYelloShader);
 
   // 创建着色器程序并附加着色器
   GLuint shaderProgram = glCreateProgram();
+  GLuint shaderYelloProgram = glCreateProgram();
   glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(shaderYelloProgram, vertexShader);
   glAttachShader(shaderProgram, fragmentShader);
+  glAttachShader(shaderYelloProgram, fragmentYelloShader);
   // 链接对象
   glLinkProgram(shaderProgram);
+  glLinkProgram(shaderYelloProgram);
 
   // 删除着色器
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
+  glDeleteShader(fragmentYelloShader);
 
   // 初始化
   GLuint VAO[2], VBO[2], EBO;
@@ -112,6 +127,7 @@ int main() {
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    glUseProgram(shaderYelloProgram);
     glBindVertexArray(VAO[1]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     // 绘制
