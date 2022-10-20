@@ -70,6 +70,12 @@ int main() {
       0, 1, 3,  // 第一个三角形
       1, 2, 3   // 第二个三角形
   };
+  glm::vec3 cubePositions[] = {
+      glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
+      glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
+      glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
+      glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
+      glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
   // 着色器
   Shader myShader("../../shaders/shader.vs", "../../shaders/shader.fs");
@@ -146,11 +152,6 @@ int main() {
     myShader.use();
     // myShader.setFloat("offset", .5f);
     myShader.setU("mixValue", mixValue);
-    // 随时间旋转
-    glm::mat4 deltaModel(1);
-    deltaModel = glm::rotate(model, (float)glfwGetTime() * glm::radians(45.0f),
-                             glm::vec3(0.5f, 1.0f, 0.0f));
-    myShader.setU("model", glm::value_ptr(deltaModel));
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
@@ -160,7 +161,17 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    for (GLuint i = 0; i < 10; ++i) {
+      // 随时间旋转
+      glm::mat4 deltaModel(1);
+      deltaModel = glm::translate(deltaModel, cubePositions[i]);
+      GLfloat angle = (i + 1) * 20.0f;
+      deltaModel =
+          glm::rotate(deltaModel, (GLfloat)glfwGetTime() * glm::radians(angle),
+                      glm::vec3(0.5f, 1.0f, 0.0f));
+      myShader.setU("model", glm::value_ptr(deltaModel));
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
