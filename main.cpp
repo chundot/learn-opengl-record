@@ -10,6 +10,7 @@
 void processInput(GLFWwindow *window);
 
 float mixValue = .2f;
+glm::mat4 *viewPtr;
 
 int main() {
   glfwInit();
@@ -132,6 +133,7 @@ int main() {
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
   glm::mat4 model(1), view(1), proj(1);
+  viewPtr = &view;
   // 变换到世界坐标
   model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
   // 观察
@@ -170,6 +172,7 @@ int main() {
           glm::rotate(deltaModel, (GLfloat)glfwGetTime() * glm::radians(angle),
                       glm::vec3(0.5f, 1.0f, 0.0f));
       myShader.setU("model", glm::value_ptr(deltaModel));
+      myShader.setU("view", glm::value_ptr(view));
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
     // 绘制
@@ -192,8 +195,18 @@ void processInput(GLFWwindow *window) {
   // ESC时退出
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
-  // 修改纹理可见度
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) mixValue += .001f;
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) mixValue -= .001f;
+  // 更改相机位置
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    *viewPtr = glm::translate(*viewPtr, glm::vec3(0, -.01, 0));
+  }
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    *viewPtr = glm::translate(*viewPtr, glm::vec3(0, .01, 0));
+  }
+  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    *viewPtr = glm::translate(*viewPtr, glm::vec3(.01, 0, 0));
+  }
+  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    *viewPtr = glm::translate(*viewPtr, glm::vec3(-.01, 0, 0));
+  }
   mixValue = max(0.0f, min(1.0f, mixValue));
 }
