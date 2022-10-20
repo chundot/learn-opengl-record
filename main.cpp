@@ -122,12 +122,16 @@ int main() {
     myShader.use();
     // myShader.setFloat("offset", .5f);
     myShader.setU("mixValue", mixValue);
-    // 旋转及平移
-    glm::mat4 trans(1);
-    trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-    trans =
-        glm::rotate(trans, (GLfloat)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-    myShader.setU("transform", glm::value_ptr(trans));
+    glm::mat4 model(1), view(1), proj(1);
+    // 变换到世界坐标
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
+    // 观察
+    view = glm::translate(view, glm::vec3(0, 0, -3));
+    // 透视投影
+    proj = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, .1f, 100.0f);
+    myShader.setU("model", glm::value_ptr(model));
+    myShader.setU("view", glm::value_ptr(view));
+    myShader.setU("proj", glm::value_ptr(proj));
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
@@ -137,12 +141,6 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glm::mat4 trans1(1);
-    trans1 = glm::translate(trans1, glm::vec3(-.5f, .5f, 0));
-    auto scaleVal = abs(sin(glfwGetTime()));
-    trans1 = glm::scale(trans1, glm::vec3(scaleVal, scaleVal, scaleVal));
-    myShader.setU("transform", glm::value_ptr(trans1));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // 绘制
     glfwSwapBuffers(window);
