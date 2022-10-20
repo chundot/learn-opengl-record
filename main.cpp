@@ -40,12 +40,29 @@ int main() {
       window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
 
   GLfloat vertices[] = {
-      // 位置                //颜色             //纹理坐标
-      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,  // 右上
-      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,  // 右下
-      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // 左下
-      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   // 左上
-  };
+      -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+      0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+      -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+
+      -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+      0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+      -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+
+      -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
+      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+      -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+
+      0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+      0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+      0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
+      0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+      -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+
+      -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+      0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+      -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
 
   GLuint indices[] = {
       // 索引从0开始
@@ -71,16 +88,12 @@ int main() {
                GL_STATIC_DRAW);
   // 解析顶点数据
   // 位置属性
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-  // 颜色属性
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+  // 纹理映射
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
-  // 纹理映射
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        (void *)(6 * sizeof(float)));
-  glEnableVertexAttribArray(2);
 
   // 生成纹理对象
   GLuint texture0, texture1;
@@ -111,6 +124,16 @@ int main() {
 
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
+  glm::mat4 model(1), view(1), proj(1);
+  // 变换到世界坐标
+  model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
+  // 观察
+  view = glm::translate(view, glm::vec3(0, 0, -3));
+  // 透视投影
+  proj = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, .1f, 100.0f);
+  myShader.setU("model", glm::value_ptr(model));
+  myShader.setU("view", glm::value_ptr(view));
+  myShader.setU("proj", glm::value_ptr(proj));
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 处理输入
@@ -122,16 +145,11 @@ int main() {
     myShader.use();
     // myShader.setFloat("offset", .5f);
     myShader.setU("mixValue", mixValue);
-    glm::mat4 model(1), view(1), proj(1);
-    // 变换到世界坐标
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
-    // 观察
-    view = glm::translate(view, glm::vec3(0, 0, -3));
-    // 透视投影
-    proj = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, .1f, 100.0f);
-    myShader.setU("model", glm::value_ptr(model));
-    myShader.setU("view", glm::value_ptr(view));
-    myShader.setU("proj", glm::value_ptr(proj));
+    // 随时间旋转
+    glm::mat4 deltaModel(1);
+    deltaModel = glm::rotate(model, (float)glfwGetTime() * glm::radians(45.0f),
+                             glm::vec3(0.5f, 1.0f, 0.0f));
+    myShader.setU("model", glm::value_ptr(deltaModel));
     // 变色
     GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
     GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
@@ -141,7 +159,7 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
