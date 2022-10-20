@@ -34,7 +34,8 @@ int main() {
 
   // 视口
   glViewport(0, 0, 800, 600);
-
+  // 启用深度测试
+  glEnable(GL_DEPTH_TEST);
   // 设置窗口变化时的回调
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
@@ -140,7 +141,7 @@ int main() {
     processInput(window);
     // 颜色
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // 使用着色器程序绘制
     myShader.use();
     // myShader.setFloat("offset", .5f);
