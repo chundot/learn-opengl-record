@@ -84,7 +84,8 @@ int main() {
       glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
   // 着色器
-  Shader myShader("../../shaders/shader.vs", "../../shaders/shader.fs");
+  Shader myShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
+      lightShader("../../shaders/shader.vs", "../../shaders/light.fs");
 
   // 初始化
   GLuint VAO, VBO, EBO;
@@ -166,9 +167,8 @@ int main() {
   view = glm::translate(view, glm::vec3(0, 0, -3));
   // 透视投影
   proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
-  myShader.setU("model", glm::value_ptr(model));
-  myShader.setU("view", glm::value_ptr(view));
-  myShader.setU("proj", glm::value_ptr(proj));
+  myShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
+                    glm::value_ptr(proj));
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差
@@ -180,14 +180,6 @@ int main() {
     // 颜色
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // 使用着色器程序绘制
-    myShader.use();
-    // myShader.setFloat("offset", .5f);
-    myShader.setU("mixValue", mixValue);
-    // 变色
-    GLint vertexColorLocation = glGetUniformLocation(myShader.id, "ourColor");
-    GLfloat greenVal = (GLfloat)sin(glfwGetTime()) / 2.0f + .5f;
-    glUniform4f(vertexColorLocation, 0.0f, greenVal, 0.0f, 1.0f);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture0);
     glActiveTexture(GL_TEXTURE1);
@@ -195,19 +187,20 @@ int main() {
     glBindVertexArray(VAO);
     view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
     proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
-    for (GLuint i = 0; i < 10; ++i) {
-      // 随时间旋转
-      glm::mat4 deltaModel(1);
-      deltaModel = glm::translate(deltaModel, cubePositions[i]);
-      GLfloat angle = (i + 1) * 20.0f;
-      deltaModel =
-          glm::rotate(deltaModel, (GLfloat)glfwGetTime() * glm::radians(angle),
-                      glm::vec3(0.5f, 1.0f, 0.0f));
-      myShader.setU("model", glm::value_ptr(deltaModel));
-      myShader.setU("view", glm::value_ptr(view));
-      myShader.setU("proj", glm::value_ptr(proj));
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+    glm::mat4 deltaModel(1);
+    // 物体
+    deltaModel = glm::translate(glm::mat4(1), cubePositions[0]);
+    myShader.use(), myShader.setU("objectColor", 1.0f, 0.5f, 0.31f),
+        myShader.setU("lightColor", 1.0f, 1.0f, 1.0f),
+        myShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
+                          glm::value_ptr(proj));
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    // 光源
+    deltaModel = glm::translate(glm::mat4(1), cubePositions[1]);
+    lightShader.use(),
+        lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
+                             glm::value_ptr(proj));
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
