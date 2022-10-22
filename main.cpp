@@ -1,5 +1,6 @@
 ﻿// #define GLFW_INCLUDE_NONE
 #include "shader.hpp"
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include "stb_image.hpp"
@@ -10,8 +11,15 @@
 void processInput(GLFWwindow *window);
 
 float mixValue = .2f;
-glm::mat4 *viewPtr;
+float deltaTime = 0.0f;          // 当前帧与上一帧的时间差
+float lastFrame = 0.0f;          // 上一帧的时间
+float pitch = 0;                 // 俯仰角
+float yaw = 0;                   // 偏航角
+float lastX = 400, lastY = 300;  // 鼠标位置
 
+bool firstMouse = true;
+
+glm::vec3 *cameraPosPtr, *cameraFront, *cameraUp, direction, front;
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -25,6 +33,7 @@ int main() {
     glfwTerminate();
     return -1;
   }
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwMakeContextCurrent(window);
 
   // 初始化glad 用于调用openGL函数
@@ -40,7 +49,6 @@ int main() {
   // 设置窗口变化时的回调
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
-
   GLfloat vertices[] = {
       -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
       0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
@@ -135,10 +143,26 @@ int main() {
   glm::mat4 model(1), proj(1);
   // 相机
   auto cameraPos = glm::vec3(0, 0, 3), cameraTarget = glm::vec3(0, 0, 0);
-  auto front = glm::normalize(cameraPos - cameraTarget),
-       up = glm::vec3(0, 1, 0), right = glm::normalize(glm::cross(up, front));
+  auto up = glm::vec3(0, 1, 0), right = glm::normalize(glm::cross(up, front));
   auto view = glm::lookAt(cameraPos, cameraTarget, up);
-  viewPtr = &view;
+  front = glm::vec3(0, 0, -1);
+  // 设置鼠标移动的回调
+  glfwSetCursorPosCallback(
+      window, [](GLFWwindow *window, double xPos, double yPos) {
+        if (firstMouse)
+          lastX = (GLfloat)xPos, lastY = (GLfloat)yPos, firstMouse = false;
+        float xOffset = xPos - lastX, yOffset = lastY - yPos;
+        lastX = (GLfloat)xPos, lastY = (GLfloat)yPos;
+        float sensitivity = 0.01;
+        xOffset *= sensitivity, yOffset *= sensitivity;
+        pitch += yOffset, yaw += xOffset;
+        pitch = min(89.0f, max(-89.0f, pitch));
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front = glm::normalize(direction);
+      });
+  cameraPosPtr = &cameraPos, cameraUp = &up, cameraFront = &front;
   // 变换到世界坐标
   model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
   // 观察
@@ -150,6 +174,10 @@ int main() {
   myShader.setU("proj", glm::value_ptr(proj));
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
+    // 计算时间差
+    float curFrame = glfwGetTime();
+    deltaTime = curFrame - lastFrame;
+    lastFrame = curFrame;
     // 处理输入
     processInput(window);
     // 颜色
@@ -168,10 +196,7 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
-    // 旋转相机
-    float radius = 10, camX = (GLfloat)sin(glfwGetTime()) * radius,
-          camZ = (GLfloat)cos(glfwGetTime()) * radius;
-    view = glm::lookAt(glm::vec3(camX, 0, camZ), cameraTarget, up);
+    view = glm::lookAt(cameraPos, cameraPos + front, up);
     for (GLuint i = 0; i < 10; ++i) {
       // 随时间旋转
       glm::mat4 deltaModel(1);
@@ -204,4 +229,16 @@ void processInput(GLFWwindow *window) {
   // ESC时退出
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+  // 移动相机
+  float cameraSpeed = 2.5f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    *cameraPosPtr += cameraSpeed * (*cameraFront);
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    *cameraPosPtr -= cameraSpeed * (*cameraFront);
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    *cameraPosPtr -=
+        glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    *cameraPosPtr +=
+        glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;
 }
