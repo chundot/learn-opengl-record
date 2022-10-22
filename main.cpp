@@ -132,7 +132,12 @@ int main() {
 
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
-  glm::mat4 model(1), view(1), proj(1);
+  glm::mat4 model(1), proj(1);
+  // 相机
+  auto cameraPos = glm::vec3(0, 0, 3), cameraTarget = glm::vec3(0, 0, 0);
+  auto front = glm::normalize(cameraPos - cameraTarget),
+       up = glm::vec3(0, 1, 0), right = glm::normalize(glm::cross(up, front));
+  auto view = glm::lookAt(cameraPos, cameraTarget, up);
   viewPtr = &view;
   // 变换到世界坐标
   model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
@@ -163,6 +168,10 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
+    // 旋转相机
+    float radius = 10, camX = (GLfloat)sin(glfwGetTime()) * radius,
+          camZ = (GLfloat)cos(glfwGetTime()) * radius;
+    view = glm::lookAt(glm::vec3(camX, 0, camZ), cameraTarget, up);
     for (GLuint i = 0; i < 10; ++i) {
       // 随时间旋转
       glm::mat4 deltaModel(1);
@@ -195,18 +204,4 @@ void processInput(GLFWwindow *window) {
   // ESC时退出
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
-  // 更改相机位置
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-    *viewPtr = glm::translate(*viewPtr, glm::vec3(0, -.01, 0));
-  }
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    *viewPtr = glm::translate(*viewPtr, glm::vec3(0, .01, 0));
-  }
-  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-    *viewPtr = glm::translate(*viewPtr, glm::vec3(.01, 0, 0));
-  }
-  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-    *viewPtr = glm::translate(*viewPtr, glm::vec3(-.01, 0, 0));
-  }
-  mixValue = max(0.0f, min(1.0f, mixValue));
 }
