@@ -16,6 +16,7 @@ float lastFrame = 0.0f;          // 上一帧的时间
 float pitch = 0;                 // 俯仰角
 float yaw = 0;                   // 偏航角
 float lastX = 400, lastY = 300;  // 鼠标位置
+float fov = 45;
 
 bool firstMouse = true;
 
@@ -162,13 +163,17 @@ int main() {
         direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         front = glm::normalize(direction);
       });
+  glfwSetScrollCallback(window,
+                        [](GLFWwindow *window, double xOffset, double yOffset) {
+                          fov = min(45.0f, max(1.0f, fov - (float)yOffset));
+                        });
   cameraPosPtr = &cameraPos, cameraUp = &up, cameraFront = &front;
   // 变换到世界坐标
   model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 0));
   // 观察
   view = glm::translate(view, glm::vec3(0, 0, -3));
   // 透视投影
-  proj = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, .1f, 100.0f);
+  proj = glm::perspective(glm::radians(fov), 4.0f / 3.0f, .1f, 100.0f);
   myShader.setU("model", glm::value_ptr(model));
   myShader.setU("view", glm::value_ptr(view));
   myShader.setU("proj", glm::value_ptr(proj));
@@ -197,6 +202,7 @@ int main() {
     glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(VAO);
     view = glm::lookAt(cameraPos, cameraPos + front, up);
+    proj = glm::perspective(glm::radians(fov), 4.0f / 3.0f, .1f, 100.0f);
     for (GLuint i = 0; i < 10; ++i) {
       // 随时间旋转
       glm::mat4 deltaModel(1);
@@ -207,6 +213,7 @@ int main() {
                       glm::vec3(0.5f, 1.0f, 0.0f));
       myShader.setU("model", glm::value_ptr(deltaModel));
       myShader.setU("view", glm::value_ptr(view));
+      myShader.setU("proj", glm::value_ptr(proj));
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
     // 绘制
