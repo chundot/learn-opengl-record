@@ -144,8 +144,6 @@ int main() {
 
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
-  myShader.setU("lightPos", cubePositions[5].x, cubePositions[5].y,
-                cubePositions[5].z);
   glm::mat4 model(1), proj(1);
   // 相机
   camera.pos = glm::vec3(0, 0, 3);
@@ -155,16 +153,16 @@ int main() {
   camera.target = glm::vec3(0, 0, 0);
   auto view = glm::lookAt(camera.pos, camera.target, camera.up);
   // 设置鼠标移动的回调
-  glfwSetCursorPosCallback(
-      window, [](GLFWwindow *window, double xPos, double yPos) {
-        if (firstMouse)
-          lastX = (GLfloat)xPos, lastY = (GLfloat)yPos, firstMouse = false;
-        float xOffset = (GLfloat)xPos - lastX, yOffset = lastY - (GLfloat)yPos;
-        lastX = (GLfloat)xPos, lastY = (GLfloat)yPos;
-        float sensitivity = 0.01f;
-        xOffset *= sensitivity, yOffset *= sensitivity;
-        camera.updateEuler(xOffset, yOffset);
-      });
+  glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos,
+                                      double yPos) {
+    if (firstMouse)
+      lastX = (GLfloat)xPos, lastY = (GLfloat)yPos, firstMouse = false;
+    GLfloat xOffset = (GLfloat)xPos - lastX, yOffset = lastY - (GLfloat)yPos;
+    lastX = (GLfloat)xPos, lastY = (GLfloat)yPos;
+    GLfloat sensitivity = 0.01f;
+    xOffset *= sensitivity, yOffset *= sensitivity;
+    camera.updateEuler(xOffset, yOffset);
+  });
   glfwSetScrollCallback(window,
                         [](GLFWwindow *window, double xOffset, double yOffset) {
                           camera.updateFov((GLfloat)yOffset);
@@ -177,12 +175,16 @@ int main() {
   proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
   myShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
                     glm::value_ptr(proj));
+  GLfloat r = sqrt(cubePositions[5].x * cubePositions[5].x +
+                   cubePositions[5].z * cubePositions[5].z);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差
     float curFrame = (GLfloat)glfwGetTime();
     deltaTime = curFrame - lastFrame;
     lastFrame = curFrame;
+    cubePositions[5].x = cos(curFrame) * r,
+    cubePositions[5].z = sin(curFrame) * r;
     // 处理输入
     processInput(window);
     // 颜色
@@ -202,7 +204,9 @@ int main() {
         myShader.setU("lightColor", 1.0f, 1.0f, 1.0f),
         myShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                           glm::value_ptr(proj)),
-        myShader.setU("viewPos", camera.pos.x, camera.pos.y, camera.pos.z);
+        myShader.setU("viewPos", camera.pos.x, camera.pos.y, camera.pos.z),
+        myShader.setU("lightPos", cubePositions[5].x, cubePositions[5].y,
+                      cubePositions[5].z);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     // 光源
     deltaModel = glm::translate(glm::mat4(1), cubePositions[5]);
