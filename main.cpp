@@ -240,6 +240,10 @@ void processInput(GLFWwindow *window) {
     camera.pos += cameraSpeed * (camera.front);
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     camera.pos -= cameraSpeed * (camera.front);
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    camera.pos += cameraSpeed * (camera.up);
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    camera.pos -= cameraSpeed * (camera.up);
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     camera.pos -=
         glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
