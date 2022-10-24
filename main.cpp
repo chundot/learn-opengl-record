@@ -106,9 +106,7 @@ int main() {
       lightShader("../../shaders/shader.vs", "../../shaders/light.fs");
   auto [VAO, VBO, EBO] =
       initBuffer(vertices, indices, sizeof(vertices), sizeof(indices));
-  auto [texture0, texture1] = loadTexture();
-  myShader.use();
-  myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
+  auto [diffTex, specTex] = loadTexture();
   glm::mat4 model(1), proj(1);
   // 相机初始化
   cameraInit();
@@ -134,8 +132,10 @@ int main() {
   view = glm::translate(view, glm::vec3(0, 0, -3));
   // 透视投影
   proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
+  myShader.use();
   myShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
                     glm::value_ptr(proj));
+  myShader.setU("material.diffuse", 0), myShader.setU("material.specular", 1);
   GLfloat r = sqrt(cubePositions[5].x * cubePositions[5].x +
                    cubePositions[5].z * cubePositions[5].z);
   // 渲染循环
@@ -152,9 +152,9 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture0);
+    glBindTexture(GL_TEXTURE_2D, diffTex);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+    glBindTexture(GL_TEXTURE_2D, specTex);
     glBindVertexArray(VAO);
     view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
     proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
@@ -281,8 +281,8 @@ tuple<GLuint, GLuint> loadTexture() {
   };
   // 生成纹理对象
   GLuint texture0, texture1;
-  genTex(texture1, "../../images/container.jpg", GL_RGB);
   genTex(texture0, "../../images/container2.png", GL_RGBA, true);
+  genTex(texture1, "../../images/container2_specular.png", GL_RGBA, true);
   return make_tuple(texture0, texture1);
 }
 
