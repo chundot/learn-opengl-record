@@ -3,10 +3,12 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <tuple>
 #include "stb_image.hpp"
 #include "camera.hpp"
 
 void processInput(GLFWwindow *window);
+tuple<GLfloat, GLfloat, GLfloat> rndColor();
 
 float mixValue = .2f;
 float deltaTime = 0.0f;          // 当前帧与上一帧的时间差
@@ -198,19 +200,27 @@ int main() {
     view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
     proj = glm::perspective(glm::radians(camera.fov), 4.0f / 3.0f, .1f, 100.0f);
     glm::mat4 deltaModel(1);
+    // 变色
+    auto [r, g, b] = rndColor();
     // 物体
     deltaModel = glm::translate(glm::mat4(1), cubePositions[0]);
     myShader.use(), myShader.setU("objectColor", 1.0f, 0.5f, 0.31f),
-        myShader.setU("lightColor", 1.0f, 1.0f, 1.0f),
         myShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                           glm::value_ptr(proj)),
         myShader.setU("viewPos", camera.pos.x, camera.pos.y, camera.pos.z),
-        myShader.setU("lightPos", cubePositions[5].x, cubePositions[5].y,
-                      cubePositions[5].z);
+        myShader.setU("light.position", cubePositions[5].x, cubePositions[5].y,
+                      cubePositions[5].z),
+        myShader.setU("light.ambient", 0.1f * r, 0.1f * g, 0.1f * b),
+        myShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
+        myShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
+        myShader.setU("material.ambient", 1.0f, 0.5f, 0.31f),
+        myShader.setU("material.diffuse", 1.0f, 0.5f, 0.31f),
+        myShader.setU("material.specular", 0.5f, 0.5f, 0.5f),
+        myShader.setU("material.shininess", 64.0f);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     // 光源
     deltaModel = glm::translate(glm::mat4(1), cubePositions[5]);
-    lightShader.use(),
+    lightShader.use(), lightShader.setU("objectColor", r, g, b),
         lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                              glm::value_ptr(proj));
     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -250,4 +260,10 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     camera.pos +=
         glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
+}
+
+tuple<GLfloat, GLfloat, GLfloat> rndColor() {
+  GLfloat curFrame = glfwGetTime();
+  return make_tuple(sin(curFrame * 0.7), sin(curFrame * 1.3),
+                    sin(curFrame * 2));
 }

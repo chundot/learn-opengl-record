@@ -13,6 +13,7 @@ target_link_libraries(learn-opengl-record PRIVATE glm::glm)
 target_link_libraries(learn-opengl-record PRIVATE glfw)
 target_link_libraries(learn-opengl-record PRIVATE glad::glad)
 
+set_property(TARGET learn-opengl-record PROPERTY CXX_STANDARD 20)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
