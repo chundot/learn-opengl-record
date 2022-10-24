@@ -9,6 +9,10 @@
 
 void processInput(GLFWwindow *window);
 tuple<GLfloat, GLfloat, GLfloat> rndColor();
+tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[], GLuint indices[],
+                                         GLuint s1, GLuint s2);
+tuple<GLuint, GLuint> loadTexture();
+void cameraInit();
 
 float mixValue = .2f;
 float deltaTime = 0.0f;          // 当前帧与上一帧的时间差
@@ -94,65 +98,14 @@ int main() {
   // 着色器
   Shader myShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
       lightShader("../../shaders/shader.vs", "../../shaders/light.fs");
-
-  // 初始化
-  GLuint VAO, VBO, EBO;
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-  glBindVertexArray(VAO);
-  // 顶点数组复制到缓冲中
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  // 索引缓冲
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
-  // 解析顶点数据
-  // 位置属性
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-  // 法线映射
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                        (void *)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  // 生成纹理对象
-  GLuint texture0, texture1;
-  auto genTex = [](GLuint &tex, const GLchar *imgPath, GLint mode,
-                   GLboolean flip = false) {
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    // 设置环绕模式
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // 加载并生成纹理
-    GLint width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(flip);
-    unsigned char *data = stbi_load(imgPath, &width, &height, &nrChannels, 0);
-    if (data) {
-      glad_glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode,
-                        GL_UNSIGNED_BYTE, data);
-      glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-      std::cout << "Failed to load texture" << std::endl;
-    }
-    // 释放已加载的图像
-    stbi_image_free(data);
-  };
-  genTex(texture0, "../../images/container.jpg", GL_RGB);
-  genTex(texture1, "../../images/awesomeface.png", GL_RGBA, true);
-
+  auto [VAO, VBO, EBO] =
+      initBuffer(vertices, indices, sizeof(vertices), sizeof(indices));
+  auto [texture0, texture1] = loadTexture();
   myShader.use();
   myShader.setU("ourTexture0", 0), myShader.setU("ourTexture1", 1);
   glm::mat4 model(1), proj(1);
-  // 相机
-  camera.pos = glm::vec3(0, 0, 3);
-  camera.up = glm::vec3(0, 1, 0);
-  camera.front = glm::vec3(0, 0, -1);
-  camera.right = glm::normalize(glm::cross(camera.up, camera.front));
-  camera.target = glm::vec3(0, 0, 0);
+  // 相机初始化
+  cameraInit();
   auto view = glm::lookAt(camera.pos, camera.target, camera.up);
   // 设置鼠标移动的回调
   glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos,
@@ -264,6 +217,71 @@ void processInput(GLFWwindow *window) {
 
 tuple<GLfloat, GLfloat, GLfloat> rndColor() {
   GLfloat curFrame = glfwGetTime();
-  return make_tuple(sin(curFrame * 0.7), sin(curFrame * 1.3),
-                    sin(curFrame * 2));
+  return make_tuple((GLfloat)sin(curFrame * 0.7), (GLfloat)sin(curFrame * 1.3),
+                    (GLfloat)sin(curFrame * 2));
 }
+
+tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[], GLuint indices[],
+                                         GLuint s1, GLuint s2) {
+  // 初始化
+  GLuint VAO, VBO, EBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+  glBindVertexArray(VAO);
+  // 顶点数组复制到缓冲中
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, s1, vertices, GL_STATIC_DRAW);
+  // 索引缓冲
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, s2, indices, GL_STATIC_DRAW);
+  // 解析顶点数据
+  // 位置属性
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+  // 法线映射
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+  return make_tuple(VAO, VBO, EBO);
+}
+
+tuple<GLuint, GLuint> loadTexture() {
+  auto genTex = [](GLuint &tex, const GLchar *imgPath, GLint mode,
+                   GLboolean flip = false) {
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    // 设置环绕模式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // 加载并生成纹理
+    GLint width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(flip);
+    unsigned char *data = stbi_load(imgPath, &width, &height, &nrChannels, 0);
+    if (data) {
+      glad_glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode,
+                        GL_UNSIGNED_BYTE, data);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+      std::cout << "Failed to load texture" << std::endl;
+    }
+    // 释放已加载的图像
+    stbi_image_free(data);
+  };
+  // 生成纹理对象
+  GLuint texture0, texture1;
+  genTex(texture0, "../../images/container.jpg", GL_RGB);
+  genTex(texture1, "../../images/awesomeface.png", GL_RGBA, true);
+  return make_tuple(texture0, texture1);
+}
+
+void cameraInit() {
+  camera.pos = glm::vec3(0, 0, 3);
+  camera.up = glm::vec3(0, 1, 0);
+  camera.front = glm::vec3(0, 0, -1);
+  camera.right = glm::normalize(glm::cross(camera.up, camera.front));
+  camera.target = glm::vec3(0, 0, 0);
+}
+
+void onRender() {}
