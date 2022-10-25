@@ -8,11 +8,15 @@
 #include "utils/misc.hpp"
 #include "utils/time.hpp"
 #include "painters/light_patiner.hpp"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 void processInput(GLFWwindow *window);
 
 GLfloat Time::deltaTime = 0, Time::lastFrame = 0;
 Camera *Camera::main;
+int width = 1024, height = 768;
 
 int main() {
   glfwInit();
@@ -21,7 +25,7 @@ int main() {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   // 创建窗口对象
-  auto window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+  auto window = glfwCreateWindow(width, height, "LearnOpenGL", NULL, NULL);
   if (window == NULL) {
     std::cout << "Failed to create GLFW window" << std::endl;
     glfwTerminate();
@@ -37,7 +41,7 @@ int main() {
   }
 
   // 视口
-  glViewport(0, 0, 800, 600);
+  glViewport(0, 0, width, height);
   // 启用深度测试
   glEnable(GL_DEPTH_TEST);
   // 设置窗口变化时的回调
@@ -50,10 +54,20 @@ int main() {
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
   LightPainter paint;
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsDark();
+  bool showDemoWindow = true;
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差
     Time::update();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow(&showDemoWindow);
     // cubePositions[5].x = cos(curFrame) * r,
     // cubePositions[5].z = sin(curFrame) * r;
     // 处理输入
@@ -63,11 +77,17 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // 渲染
     paint.onRender();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
     glfwPollEvents();
   }
+  // 释放ImGui资源
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
   paint.terminate();
   // 释放资源
   glfwTerminate();
