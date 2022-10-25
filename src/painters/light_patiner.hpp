@@ -46,18 +46,28 @@ class LightPainter : public Painter {
         objShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                            glm::value_ptr(proj)),
         objShader.setF3("viewPos", glm::value_ptr(camera.pos)),
-        objShader.setF3("light.position", glm::value_ptr(cubePositions[5])),
+        objShader.setF3("light.direction", glm::value_ptr(cubePositions[10])),
         objShader.setU("light.ambient", 0.1f * r, 0.1f * g, 0.1f * b),
         objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
         objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
         objShader.setU("material.shininess", (GLfloat)shininess);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    // 光源
-    deltaModel = glm::translate(glm::mat4(1), cubePositions[5]);
-    lightShader.use(), lightShader.setU("objectColor", r, g, b),
-        lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
-                             glm::value_ptr(proj));
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    for (unsigned int i = 0; i < 10; i++) {
+      glm::mat4 model(1);
+      model = glm::translate(model, cubePositions[i]);
+      float angle = 20.0f * i;
+      model =
+          glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+      objShader.setMat4("model", glm::value_ptr(model));
+
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+    // 光源方块
+    // deltaModel = glm::translate(glm::mat4(1), cubePositions[10]);
+    // lightShader.use(), lightShader.setU("objectColor", r, g, b),
+    //     lightShader.setTrans(glm::value_ptr(deltaModel),
+    //     glm::value_ptr(view),
+    //                          glm::value_ptr(proj));
+    // glDrawArrays(GL_TRIANGLES, 0, 36);
   }
   void onImGuiRender() override {
     if (ImGui::BeginMenuBar()) {
@@ -73,7 +83,7 @@ class LightPainter : public Painter {
       ImGui::EndMenuBar();
     }
     ImGui::ColorEdit3("Light Color", Misc::color);
-    ImGui::DragFloat3("Light Pos", glm::value_ptr(cubePositions[5]), .2f, -15,
+    ImGui::DragFloat3("Light Dir", glm::value_ptr(cubePositions[10]), .2f, -15,
                       15);
     ImGui::SliderInt("shininess", &shininess, 1, 256);
   }
@@ -131,12 +141,13 @@ class LightPainter : public Painter {
       0, 1, 3,  // 第一个三角形
       1, 2, 3   // 第二个三角形
   };
-  glm::vec3 cubePositions[10] = {
+  glm::vec3 cubePositions[11] = {
       glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
       glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
       glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
       glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-      glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
+      glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f),
+      glm::vec3(-0.2f, -1.0f, -0.3f)};
   void initBuffer() {
     // 初始化
     glGenVertexArrays(1, &VAO);
