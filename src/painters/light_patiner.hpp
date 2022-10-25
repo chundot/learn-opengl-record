@@ -17,7 +17,7 @@ class LightPainter : public Painter {
   }
   void init() override {
     initBuffer();
-    objShader.setU("material.diffuse", 0),
+    objShader.use(), objShader.setU("material.diffuse", 0),
         objShader.setU("material.specular", 1);
   }
   void terminate() override {
@@ -51,8 +51,7 @@ class LightPainter : public Painter {
         objShader.setU("light.ambient", 0.1f * r, 0.1f * g, 0.1f * b),
         objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
         objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
-        objShader.setU("material.ambient", 1.0f, 0.5f, 0.31f),
-        objShader.setU("material.shininess", 64.0f);
+        objShader.setU("material.shininess", (GLfloat)shininess);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     // 光源
     deltaModel = glm::translate(glm::mat4(1), cubePositions[5]);
@@ -75,6 +74,9 @@ class LightPainter : public Painter {
       ImGui::EndMenuBar();
     }
     ImGui::ColorEdit3("Light Color", Misc::color);
+    ImGui::DragFloat3("Light Pos", glm::value_ptr(cubePositions[5]), .2f, -15,
+                      15);
+    ImGui::SliderInt("shininess", &shininess, 1, 256);
   }
   void updateTrans() {
     auto [m, v, p] = Camera::main->getMats();
@@ -83,6 +85,7 @@ class LightPainter : public Painter {
   }
 
  private:
+  GLint shininess = 64;
   Shader objShader, lightShader;
   GLuint diffTex, specTex;
   GLuint VAO, VBO, EBO;

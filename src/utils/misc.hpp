@@ -8,7 +8,7 @@
 
 namespace Misc {
 static GLboolean rndColor;
-static GLfloat color[3];
+static GLfloat color[3] = {1, 1, 1};
 static std::tuple<GLfloat, GLfloat, GLfloat> getColor() {
   if (rndColor) {
     GLfloat curFrame = (GLfloat)glfwGetTime();
