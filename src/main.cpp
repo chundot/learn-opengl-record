@@ -50,7 +50,6 @@ int main() {
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
   LightPainter paint;
-  paint.updateTrans();
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差

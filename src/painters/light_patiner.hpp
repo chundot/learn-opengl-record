@@ -1,8 +1,9 @@
 ﻿#include "../utils/shader.hpp"
 #include "../utils/camera.hpp"
 #include "../utils/misc.hpp"
+#include "painter.hpp"
 
-class LightPainter {
+class LightPainter : public Painter {
  public:
   LightPainter()
       : objShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
@@ -12,7 +13,11 @@ class LightPainter {
                                 true);
     init();
   }
-  void init() { initBuffer(); }
+  void init() {
+    initBuffer();
+    objShader.setU("material.diffuse", 0),
+        objShader.setU("material.specular", 1);
+  }
   void terminate() {
     glDeleteProgram(objShader.id);
     glDeleteProgram(lightShader.id);
@@ -45,8 +50,6 @@ class LightPainter {
         objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
         objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
         objShader.setU("material.ambient", 1.0f, 0.5f, 0.31f),
-        objShader.setU("material.diffuse", 1.0f, 0.5f, 0.31f),
-        objShader.setU("material.specular", 0.5f, 0.5f, 0.5f),
         objShader.setU("material.shininess", 64.0f);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     // 光源
