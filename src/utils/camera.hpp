@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 #include <tuple>
 
 struct Euler {
@@ -15,19 +16,20 @@ struct Euler {
 class Camera {
  public:
   static Camera *main;
+  Euler euler;
+  float fov = 45;
+  glm::vec3 pos, target;
+  glm::vec3 front, right, up;
+  GLboolean rotating = false;
   Camera() {
     pos = glm::vec3(0, 0, 3);
     up = glm::vec3(0, 1, 0);
     front = glm::vec3(0, 0, -1);
     right = glm::normalize(glm::cross(up, front));
     target = glm::vec3(0, 0, 0);
-    euler = {0, 0, 0};
+    euler = {-90, 0, 0};
     if (!main) main = this;
   }
-  Euler euler;
-  float fov = 45;
-  glm::vec3 pos, target;
-  glm::vec3 front, right, up;
   void updateEuler(float xOffset, float yOffset) {
     euler.pitch += yOffset, euler.yaw += xOffset;
     euler.pitch = fmin(89.0f, fmax(-89.0f, euler.pitch));
@@ -38,19 +40,21 @@ class Camera {
   }
   static void mouseScrollCallback(GLFWwindow *window, double xOffset,
                                   double yOffset) {
-    Camera::main->updateFov((GLfloat)yOffset);
+    main->updateFov((GLfloat)yOffset);
   }
   static void setCursorPosCallback(GLFWwindow *window, double xPos,
                                    double yPos) {
-    if (main->firstMouse)
-      main->lastX = (GLfloat)xPos, main->lastY = (GLfloat)yPos,
-      main->firstMouse = false;
-    GLfloat xOffset = (GLfloat)xPos - main->lastX,
-            yOffset = main->lastY - (GLfloat)yPos;
-    main->lastX = (GLfloat)xPos, main->lastY = (GLfloat)yPos;
-    GLfloat sensitivity = 0.01f;
-    xOffset *= sensitivity, yOffset *= sensitivity;
-    main->updateEuler(xOffset, yOffset);
+    if (main->rotating) {
+      GLfloat xOffset = (GLfloat)xPos - main->lastX,
+              yOffset = main->lastY - (GLfloat)yPos;
+      main->lastX = (GLfloat)xPos, main->lastY = (GLfloat)yPos;
+      xOffset *= main->sensitivity, yOffset *= main->sensitivity;
+      if (main->firstEnter) {
+        main->updateEuler(xOffset, yOffset);
+      }
+      main->firstEnter = true;
+    } else
+      main->firstEnter = false;
   }
   std::tuple<glm::mat4, glm::mat4, glm::mat4> getMats(bool getModel = true,
                                                       bool getView = true,
@@ -73,9 +77,12 @@ class Camera {
 
  private:
   glm::mat4 model, proj, view;
-  bool firstMouse;
-  float lastX = 400, lastY = 300;  // 鼠标位置
-  void updateFov(float offset) { fov = fmin(45.0f, fmax(1.0f, fov - offset)); }
+  GLboolean firstEnter;
+  GLfloat sensitivity = 0.1f;
+  GLfloat lastX = 400, lastY = 300;  // 鼠标位置
+  void updateFov(GLfloat offset) {
+    fov = fmin(45.0f, fmax(1.0f, fov - offset));
+  }
 };
 
 #endif

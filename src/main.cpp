@@ -8,9 +8,7 @@
 #include "utils/misc.hpp"
 #include "utils/time.hpp"
 #include "painters/light_patiner.hpp"
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include "utils/imgui.hpp"
 
 void processInput(GLFWwindow *window);
 
@@ -31,7 +29,6 @@ int main() {
     glfwTerminate();
     return -1;
   }
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwMakeContextCurrent(window);
 
   // 初始化glad 用于调用openGL函数
@@ -54,20 +51,11 @@ int main() {
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
   LightPainter paint;
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui::StyleColorsDark();
-  bool showDemoWindow = true;
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 330 core");
+  ImGui::onInit(window);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差
     Time::update();
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow(&showDemoWindow);
     // cubePositions[5].x = cos(curFrame) * r,
     // cubePositions[5].z = sin(curFrame) * r;
     // 处理输入
@@ -77,26 +65,32 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // 渲染
     paint.onRender();
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::onRender(paint);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
     glfwPollEvents();
   }
   // 释放ImGui资源
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  ImGui::onShutDown();
   paint.terminate();
   // 释放资源
   glfwTerminate();
 }
 
 void processInput(GLFWwindow *window) {
+  static auto recover = [&window]() {
+    Camera::main->rotating = false;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  };
   // ESC时退出
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+  // ImGUI阻塞输入
+  if (ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow)) {
+    recover();
+    return;
+  }
   // 移动相机
   float cameraSpeed = 2.5f * Time::deltaTime;
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -111,4 +105,11 @@ void processInput(GLFWwindow *window) {
     Camera::main->moveRight(-cameraSpeed);
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     Camera::main->moveRight(cameraSpeed);
+  // 转向
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+    Camera::main->rotating = true;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  } else {
+    recover();
+  }
 }

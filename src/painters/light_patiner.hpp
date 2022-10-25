@@ -1,6 +1,8 @@
-﻿#include "../utils/shader.hpp"
+﻿#include <iostream>
+#include "../utils/shader.hpp"
 #include "../utils/camera.hpp"
 #include "../utils/misc.hpp"
+#include "../utils/imgui.hpp"
 #include "painter.hpp"
 
 class LightPainter : public Painter {
@@ -13,12 +15,12 @@ class LightPainter : public Painter {
                                 true);
     init();
   }
-  void init() {
+  void init() override {
     initBuffer();
     objShader.setU("material.diffuse", 0),
         objShader.setU("material.specular", 1);
   }
-  void terminate() {
+  void terminate() override {
     glDeleteProgram(objShader.id);
     glDeleteProgram(lightShader.id);
 
@@ -26,7 +28,7 @@ class LightPainter : public Painter {
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
   }
-  void onRender() {
+  void onRender() override {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, diffTex);
     glActiveTexture(GL_TEXTURE1);
@@ -35,7 +37,7 @@ class LightPainter : public Painter {
 
     glm::mat4 deltaModel(1);
     // 变色
-    auto [r, g, b] = Misc::rndColor();
+    auto [r, g, b] = Misc::getColor();
     auto camera = *Camera::main;
     auto [model, view, proj] = camera.getMats();
     // 物体
@@ -58,6 +60,21 @@ class LightPainter : public Painter {
         lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                              glm::value_ptr(proj));
     glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
+  void onImGuiRender() override {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */
+        }
+        if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */
+        }
+        if (ImGui::MenuItem("Close", "Ctrl+W")) {
+        }
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenuBar();
+    }
+    ImGui::ColorEdit3("Light Color", Misc::color);
   }
   void updateTrans() {
     auto [m, v, p] = Camera::main->getMats();
