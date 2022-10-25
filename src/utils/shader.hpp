@@ -92,13 +92,16 @@ class Shader {
   void setU(const std::string &name, float x, float y, float z) const {
     glUniform3f(glGetUniformLocation(id, name.c_str()), x, y, z);
   }
-  void setU(const std::string &name, float *m) const {
+  void setF3(const std::string &name, float *v) {
+    glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, v);
+  }
+  void setMat4(const std::string &name, float *m) const {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, m);
   }
   void setTrans(float *model, float *view, float *proj) {
-    setU("model", model);
-    setU("view", view);
-    setU("proj", proj);
+    setMat4("model", model);
+    setMat4("view", view);
+    setMat4("proj", proj);
   }
 };
 #endif
