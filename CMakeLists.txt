@@ -4,7 +4,7 @@ project(learn-opengl-record VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
-add_executable(learn-opengl-record main.cpp)
+add_executable(learn-opengl-record src/main.cpp)
 
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)

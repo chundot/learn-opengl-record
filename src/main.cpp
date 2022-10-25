@@ -1,17 +1,18 @@
 ﻿// #define GLFW_INCLUDE_NONE
-#include "shader.hpp"
+#include "utils/shader.hpp"
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <tuple>
-#include "stb_image.hpp"
-#include "camera.hpp"
+#include "utils/stb_image.hpp"
+#include "utils/camera.hpp"
 
 void processInput(GLFWwindow *window);
-tuple<GLfloat, GLfloat, GLfloat> rndColor();
-tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[], GLuint indices[],
-                                         GLuint s1, GLuint s2);
-tuple<GLuint, GLuint> loadTexture();
+std::tuple<GLfloat, GLfloat, GLfloat> rndColor();
+std::tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[],
+                                              GLuint indices[], GLuint s1,
+                                              GLuint s2);
+std::tuple<GLuint, GLuint> loadTexture();
 void cameraInit();
 
 float mixValue = .2f;
@@ -221,14 +222,16 @@ void processInput(GLFWwindow *window) {
         glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
 }
 
-tuple<GLfloat, GLfloat, GLfloat> rndColor() {
+std::tuple<GLfloat, GLfloat, GLfloat> rndColor() {
   GLfloat curFrame = glfwGetTime();
-  return make_tuple((GLfloat)sin(curFrame * 0.7), (GLfloat)sin(curFrame * 1.3),
-                    (GLfloat)sin(curFrame * 2));
+  return std::make_tuple((GLfloat)sin(curFrame * 0.7),
+                         (GLfloat)sin(curFrame * 1.3),
+                         (GLfloat)sin(curFrame * 2));
 }
 
-tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[], GLuint indices[],
-                                         GLuint s1, GLuint s2) {
+std::tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[],
+                                              GLuint indices[], GLuint s1,
+                                              GLuint s2) {
   // 初始化
   GLuint VAO, VBO, EBO;
   glGenVertexArrays(1, &VAO);
@@ -253,10 +256,10 @@ tuple<GLuint, GLuint, GLuint> initBuffer(GLfloat vertices[], GLuint indices[],
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                         (void *)(6 * sizeof(float)));
   glEnableVertexAttribArray(2);
-  return make_tuple(VAO, VBO, EBO);
+  return std::make_tuple(VAO, VBO, EBO);
 }
 
-tuple<GLuint, GLuint> loadTexture() {
+std::tuple<GLuint, GLuint> loadTexture() {
   auto genTex = [](GLuint &tex, const GLchar *imgPath, GLint mode,
                    GLboolean flip = false) {
     glGenTextures(1, &tex);
@@ -283,7 +286,7 @@ tuple<GLuint, GLuint> loadTexture() {
   GLuint texture0, texture1;
   genTex(texture0, "../../images/container2.png", GL_RGBA, true);
   genTex(texture1, "../../images/container2_specular.png", GL_RGBA, true);
-  return make_tuple(texture0, texture1);
+  return std::make_tuple(texture0, texture1);
 }
 
 void cameraInit() {
