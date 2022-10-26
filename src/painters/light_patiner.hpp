@@ -46,10 +46,13 @@ class LightPainter : public Painter {
         objShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                            glm::value_ptr(proj)),
         objShader.setF3("viewPos", glm::value_ptr(camera.pos)),
-        objShader.setF3("light.direction", glm::value_ptr(cubePositions[10])),
-        objShader.setU("light.ambient", 0.1f * r, 0.1f * g, 0.1f * b),
+        objShader.setF3("light.position", glm::value_ptr(cubePositions[10])),
+        objShader.setU("light.ambient", 0.25f * r, 0.25f * g, 0.25f * b),
         objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
         objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
+        objShader.setU("light.constant", 1.0f),
+        objShader.setU("light.linear", 0.09f),
+        objShader.setU("light.quadratic", 0.032f),
         objShader.setU("material.shininess", (GLfloat)shininess);
     for (unsigned int i = 0; i < 10; i++) {
       glm::mat4 model(1);
@@ -62,12 +65,11 @@ class LightPainter : public Painter {
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
     // 光源方块
-    // deltaModel = glm::translate(glm::mat4(1), cubePositions[10]);
-    // lightShader.use(), lightShader.setU("objectColor", r, g, b),
-    //     lightShader.setTrans(glm::value_ptr(deltaModel),
-    //     glm::value_ptr(view),
-    //                          glm::value_ptr(proj));
-    // glDrawArrays(GL_TRIANGLES, 0, 36);
+    deltaModel = glm::translate(glm::mat4(1), cubePositions[10]);
+    lightShader.use(), lightShader.setU("objectColor", r, g, b),
+        lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
+                             glm::value_ptr(proj));
+    glDrawArrays(GL_TRIANGLES, 0, 36);
   }
   void onImGuiRender() override {
     if (ImGui::BeginMenuBar()) {
