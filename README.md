@@ -4,4 +4,4 @@
 - 使用`vcpkg`进行包管理.
 
 ## 效果
-![demo.gif](./images\docs\demo.gif)
+![demo.gif](./images/docs/demo.gif)
