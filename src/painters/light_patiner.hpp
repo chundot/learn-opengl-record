@@ -35,27 +35,34 @@ class LightPainter : public Painter {
     glBindTexture(GL_TEXTURE_2D, specTex);
     glBindVertexArray(VAO);
 
-    glm::mat4 deltaModel(1);
     // 变色
     auto [r, g, b] = Misc::getColor();
     auto camera = *Camera::main;
     auto [model, view, proj] = camera.getMats();
+    auto deltaModel = glm::mat4(1);
     // 物体
-    deltaModel = glm::translate(glm::mat4(1), cubePositions[0]);
     objShader.use(), objShader.setU("objectColor", 1.0f, 0.5f, 0.31f),
         objShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                            glm::value_ptr(proj)),
         objShader.setF3("viewPos", glm::value_ptr(camera.pos)),
-        objShader.setF3("light.position", glm::value_ptr(camera.pos)),
-        objShader.setF3("light.direction", glm::value_ptr(camera.front)),
-        objShader.setU("light.cutOff", glm::cos(glm::radians(12.5f))),
-        objShader.setU("light.outerCutOff", glm::cos(glm::radians(17.5f))),
-        objShader.setU("light.ambient", 0.25f * r, 0.25f * g, 0.25f * b),
-        objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
-        objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
-        objShader.setU("light.constant", 1.0f),
-        objShader.setU("light.linear", 0.09f),
-        objShader.setU("light.quadratic", 0.032f),
+        // 聚光
+        objShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
+        objShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
+        objShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
+        objShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
+        objShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
+        objShader.setU("spotLight.constant", 1.0f),
+        objShader.setU("spotLight.linear", 0.09f),
+        objShader.setU("spotLight.quadratic", 0.032f),
+        objShader.setU("spotLight.cutOff", glm::cos(glm::radians(12.5f))),
+        objShader.setU("spotLight.outerCutOff", glm::cos(glm::radians(15.0f))),
+        // 点光源
+        objShader.setPointLights(pointLightPositions, 4),
+        // 平行光
+        objShader.setU("dirLight.direction", -0.2f, -1.0f, -0.3f),
+        objShader.setU("dirLight.ambient", 0.05f, 0.05f, 0.05f),
+        objShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
+        objShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f),
         objShader.setU("material.shininess", (GLfloat)shininess);
     for (unsigned int i = 0; i < 10; i++) {
       glm::mat4 model(1);
@@ -68,11 +75,15 @@ class LightPainter : public Painter {
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
     // 光源方块
-    deltaModel = glm::translate(glm::mat4(1), cubePositions[10]);
     lightShader.use(), lightShader.setU("objectColor", r, g, b),
         lightShader.setTrans(glm::value_ptr(deltaModel), glm::value_ptr(view),
                              glm::value_ptr(proj));
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    for (unsigned int i = 0; i < 4; i++) {
+      glm::mat4 model(1);
+      model = glm::translate(model, pointLightPositions[i]);
+      lightShader.setMat4("model", glm::value_ptr(model));
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
   }
   void onImGuiRender() override {
     if (ImGui::BeginMenuBar()) {
@@ -88,8 +99,8 @@ class LightPainter : public Painter {
       ImGui::EndMenuBar();
     }
     ImGui::ColorEdit3("Light Color", Misc::color);
-    ImGui::DragFloat3("Light Dir", glm::value_ptr(cubePositions[10]), .2f, -15,
-                      15);
+    ImGui::DragFloat3("Light Dir", glm::value_ptr(pointLightPositions[0]), .2f,
+                      -15, 15);
     ImGui::SliderInt("shininess", &shininess, 1, 256);
   }
   void updateTrans() {
@@ -146,13 +157,15 @@ class LightPainter : public Painter {
       0, 1, 3,  // 第一个三角形
       1, 2, 3   // 第二个三角形
   };
-  glm::vec3 cubePositions[11] = {
+  glm::vec3 cubePositions[10] = {
       glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
       glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
       glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
       glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-      glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f),
-      glm::vec3(-0.2f, -1.0f, -0.3f)};
+      glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
+  glm::vec3 pointLightPositions[4] = {
+      glm::vec3(0.7f, 0.2f, 2.0f), glm::vec3(2.3f, -3.3f, -4.0f),
+      glm::vec3(-4.0f, 2.0f, -12.0f), glm::vec3(0.0f, 0.0f, -3.0f)};
   void initBuffer() {
     // 初始化
     glGenVertexArrays(1, &VAO);

@@ -7,7 +7,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <stb_image.h>
+#include "stb_image.hpp"
+#include "glm.hpp"
 
 class Shader {
  public:
@@ -97,6 +98,22 @@ class Shader {
   }
   void setMat4(const std::string &name, float *m) const {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, m);
+  }
+  void setPointLights(glm::vec3 pos[], GLint size) {
+    std::string s;
+    int i = 0;
+    while (i < size) {
+      std::ostringstream oss;
+      oss << "pointLights[" << (GLchar)('0' + i++) << ']';
+      s = oss.str();
+      setF3(s + ".position", glm::value_ptr(pos[i - 1]));
+      setU(s + ".ambient", 0.05f, 0.05f, 0.05f);
+      setU(s + ".diffuse", 0.8f, 0.8f, 0.8f);
+      setU(s + ".specular", 1.0f, 1.0f, 1.0f);
+      setU(s + ".constant", 1.0f);
+      setU(s + ".linear", 0.09f);
+      setU(s + ".quadratic", 0.032f);
+    }
   }
   void setTrans(float *model, float *view, float *proj) {
     setMat4("model", model);
