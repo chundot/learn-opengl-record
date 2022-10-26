@@ -19,26 +19,12 @@ class ModelPainter : public Painter {
     auto [_, view, proj] = camera.getMats();
     auto model = glm::mat4(1);
     model = glm::translate(model, glm::vec3(0, -.5f, 0));
-    model = glm::scale(model, glm::vec3(.07f, .07f, .07f));
-    objShader.use(),
-        objShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
-                           glm::value_ptr(proj)),
+    model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
+    objShader.use();
+    updDirLight(), updSpotLight();
+    objShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
+                       glm::value_ptr(proj)),
         objShader.setU("numPointLights", (int)pointLights.size()),
-        objShader.setU("dirLight.direction", -0.2f, -1.0f, -0.3f),
-        objShader.setU("dirLight.ambient", 0.05f, 0.05f, 0.05f),
-        objShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
-        objShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f),
-        // 聚光
-        objShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
-        objShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
-        objShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
-        objShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
-        objShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
-        objShader.setU("spotLight.constant", 1.0f),
-        objShader.setU("spotLight.linear", 0.09f),
-        objShader.setU("spotLight.quadratic", 0.032f),
-        objShader.setU("spotLight.cutOff", glm::cos(glm::radians(12.5f))),
-        objShader.setU("spotLight.outerCutOff", glm::cos(glm::radians(15.0f))),
         objShader.setPointLights(pointLights, (GLint)pointLights.size());
     for (int i = 0; i < modelLoaded.size(); ++i) {
       modelLoaded[i].Draw(objShader);
@@ -69,6 +55,22 @@ class ModelPainter : public Painter {
       }
       ImGui::EndMenuBar();
     }
+    // 平行光
+    ImGui::BulletText("Directional Light");
+    ImGui::Checkbox("Enable Directional Light", &enableDirLight);
+    if (enableDirLight) {
+      ImGui::InputFloat3("Direction", glm::value_ptr(dirLightDir));
+    }
+    // 聚光灯
+    ImGui::BulletText("SpotLight");
+    ImGui::Checkbox("Enable SpotLight", &enableSpotLight);
+    if (enableSpotLight) {
+      ImGui::DragFloat("Cut Off", &cutOff, .5f, 0, 30);
+      ImGui::DragFloat("Outer Cut Off", &outerCutOff, .5f, 1, 30);
+      cutOff = fmin(cutOff, outerCutOff);
+    }
+    // 点光源相关
+    ImGui::BulletText("Point Light");
     if (ImGui::Button("Add Point Light"))
       pointLights.push_back(glm::vec3(0, 0, 0));
     if (pointLights.size() > 0) {
@@ -78,10 +80,37 @@ class ModelPainter : public Painter {
       }
     }
   }
+  void updDirLight() {
+    objShader.setU("enableDirLight", enableDirLight),
+        objShader.setF3("dirLight.direction", glm::value_ptr(dirLightDir)),
+        objShader.setU("dirLight.ambient", 0.05f, 0.05f, 0.05f),
+        objShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
+        objShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
+  }
+  void updSpotLight() {
+    auto camera = *Camera::main;
+    objShader.setU("enableSpotLight", enableSpotLight);
+    if (enableSpotLight)
+      // 聚光
+      objShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
+          objShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
+          objShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
+          objShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
+          objShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
+          objShader.setU("spotLight.constant", 1.0f),
+          objShader.setU("spotLight.linear", 0.09f),
+          objShader.setU("spotLight.quadratic", 0.032f),
+          objShader.setU("spotLight.cutOff", glm::cos(glm::radians(cutOff))),
+          objShader.setU("spotLight.outerCutOff",
+                         glm::cos(glm::radians(outerCutOff)));
+  }
 
  private:
   std::vector<Model> modelLoaded;
   std::vector<glm::vec3> pointLights;
   Shader objShader;
+  bool enableSpotLight = false, enableDirLight;
+  glm::vec3 dirLightDir = glm::vec3(1);
+  float cutOff = 6, outerCutOff = 10;
 };
 #endif

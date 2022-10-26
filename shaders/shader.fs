@@ -55,7 +55,7 @@ uniform SpotLight spotLight;
 uniform Material material;
 uniform float mixValue;
 uniform vec3 viewPos;
-uniform bool enableSpotLight;
+uniform bool enableSpotLight, enableDirLight;
 uniform int numPointLights;
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
@@ -69,7 +69,9 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
 
     // 第一阶段：定向光照
-    vec3 result = CalcDirLight(dirLight, norm, viewDir);
+    vec3 result = vec3(0);
+    if (enableDirLight)
+        result += CalcDirLight(dirLight, norm, viewDir);
     // 第二阶段：点光源
     for(int i = 0; i < numPointLights; i++)
         result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
