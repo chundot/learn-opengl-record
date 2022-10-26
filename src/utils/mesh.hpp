@@ -27,7 +27,7 @@ class Mesh {
       : vertices(vertices), indices(indices), textures(textures) {
     setupMesh();
   }
-  void Draw(Shader shader) {
+  void Draw(Shader &shader) {
     unsigned int diffNum = 1, specNum = 1;
     for (int i = 0; i < textures.size(); ++i) {
       glActiveTexture(GL_TEXTURE0 + i);
@@ -67,15 +67,15 @@ class Mesh {
 
     // 顶点位置
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
     // 顶点法线
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          (void*)offsetof(Vertex, Normal));
+                          (void *)offsetof(Vertex, Normal));
     // 顶点纹理坐标
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          (void*)offsetof(Vertex, TexCoords));
+                          (void *)offsetof(Vertex, TexCoords));
     glBindVertexArray(0);
   }
 };
