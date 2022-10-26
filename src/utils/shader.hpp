@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include "stb_image.hpp"
 #include "glm.hpp"
 
@@ -107,6 +108,22 @@ class Shader {
       oss << "pointLights[" << (GLchar)('0' + i++) << ']';
       s = oss.str();
       setF3(s + ".position", glm::value_ptr(pos[i - 1]));
+      setU(s + ".ambient", 0.05f, 0.05f, 0.05f);
+      setU(s + ".diffuse", 0.8f, 0.8f, 0.8f);
+      setU(s + ".specular", 1.0f, 1.0f, 1.0f);
+      setU(s + ".constant", 1.0f);
+      setU(s + ".linear", 0.09f);
+      setU(s + ".quadratic", 0.032f);
+    }
+  }
+  void setPointLights(std::vector<glm::vec3> pos, GLint size) {
+    for (auto it = pos.begin(); it != pos.end(); ++it) {
+      auto p = *it;
+      std::string s;
+      std::ostringstream oss;
+      oss << "pointLights[" << (GLchar)('0' + (it - pos.begin())) << ']';
+      s = oss.str();
+      setF3(s + ".position", glm::value_ptr(p));
       setU(s + ".ambient", 0.05f, 0.05f, 0.05f);
       setU(s + ".diffuse", 0.8f, 0.8f, 0.8f);
       setU(s + ".specular", 1.0f, 1.0f, 1.0f);

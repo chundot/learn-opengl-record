@@ -1,4 +1,4 @@
-#ifndef MODEL_HPP
+﻿#ifndef MODEL_HPP
 #define MODEL_HPP
 #include <cstring>
 #include <string>
@@ -11,7 +11,7 @@
 #include <assimp/postprocess.h>
 class Model {
  public:
-  Model(const char *path) {}
+  Model(const char *path) { loadModel(path); }
   void Draw(Shader shader) {
     shader.use();
     for (int i = 0; i < meshes.size(); ++i) {
@@ -32,17 +32,17 @@ class Model {
       std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
       return;
     }
-    directory = path.substr(0, path.find_last_of('/'));
+    directory = path.substr(0, path.find_last_of('\\'));
     processNode(scene->mRootNode, scene);
   }
   void processNode(aiNode *node, const aiScene *scene) {
     // 处理节点的网格
-    for (int i = 0; i < node->mNumMeshes; ++i) {
+    for (GLuint i = 0; i < node->mNumMeshes; ++i) {
       auto mesh = scene->mMeshes[node->mMeshes[i]];
       meshes.push_back(processMesh(mesh, scene));
     }
     // 递归处理子节点
-    for (int i = 0; i < node->mNumChildren; ++i) {
+    for (GLuint i = 0; i < node->mNumChildren; ++i) {
       processNode(node->mChildren[i], scene);
     }
   }
@@ -50,7 +50,7 @@ class Model {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
-    for (int i = 0; i < mesh->mNumVertices; ++i) {
+    for (GLuint i = 0; i < mesh->mNumVertices; ++i) {
       Vertex vertex;
       // 顶点位置处理
       glm::vec3 vector;
@@ -74,9 +74,9 @@ class Model {
       vertices.push_back(vertex);
     }
     // 处理索引
-    for (int i = 0; i < mesh->mNumFaces; ++i) {
+    for (GLuint i = 0; i < mesh->mNumFaces; ++i) {
       auto face = mesh->mFaces[i];
-      for (int j = 0; j < face.mNumIndices; ++j)
+      for (GLuint j = 0; j < face.mNumIndices; ++j)
         indices.push_back(face.mIndices[j]);
     }
     // 处理材质
@@ -94,7 +94,7 @@ class Model {
   std::vector<Texture> loadMaterialTexture(aiMaterial *mat, aiTextureType type,
                                            std::string typeName) {
     std::vector<Texture> textures;
-    for (int i = 0; i < mat->GetTextureCount(type); ++i) {
+    for (GLuint i = 0; i < mat->GetTextureCount(type); ++i) {
       bool skip = false;
       aiString str;
       mat->GetTexture(type, i, &str);

@@ -7,7 +7,8 @@
 #include "utils/camera.hpp"
 #include "utils/misc.hpp"
 #include "utils/time.hpp"
-#include "painters/light_patiner.hpp"
+#include "painters/light_painter.hpp"
+#include "painters/model_painter.hpp"
 #include "utils/imgui.hpp"
 
 void processInput(GLFWwindow *window);
@@ -50,7 +51,7 @@ int main() {
   glfwSetCursorPosCallback(window, Camera::main->setCursorPosCallback);
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
-  LightPainter paint;
+  ModelPainter paint;
   ImGui::onInit(window);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
