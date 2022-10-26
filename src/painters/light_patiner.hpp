@@ -49,6 +49,7 @@ class LightPainter : public Painter {
         objShader.setF3("light.position", glm::value_ptr(camera.pos)),
         objShader.setF3("light.direction", glm::value_ptr(camera.front)),
         objShader.setU("light.cutOff", glm::cos(glm::radians(12.5f))),
+        objShader.setU("light.outerCutOff", glm::cos(glm::radians(17.5f))),
         objShader.setU("light.ambient", 0.25f * r, 0.25f * g, 0.25f * b),
         objShader.setU("light.diffuse", 0.5f * r, 0.5f * g, 0.5f * b),
         objShader.setU("light.specular", 1.0f, 1.0f, 1.0f),
