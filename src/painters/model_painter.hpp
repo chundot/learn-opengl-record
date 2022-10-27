@@ -1,4 +1,4 @@
-#ifndef MODEL_PAINTER_HPP
+﻿#ifndef MODEL_PAINTER_HPP
 #define MODEL_PAINTER_HPP
 #include <string>
 #include <vector>
@@ -25,12 +25,15 @@ class ModelPainter : public Painter {
     objShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
                        glm::value_ptr(proj)),
         objShader.setU("numPointLights", (int)pointLights.size()),
+        objShader.setU("material.shininess", 64.0f),
         objShader.setPointLights(pointLights, (GLint)pointLights.size());
     for (int i = 0; i < modelLoaded.size(); ++i) {
       modelLoaded[i].Draw(objShader);
     }
   }
   virtual void onImGuiRender() {
+    ImGui::Begin("Debug Tool", &wdActive, ImGuiWindowFlags_MenuBar);
+    // 顶部菜单栏
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Exit", "Esc")) {
@@ -38,6 +41,7 @@ class ModelPainter : public Painter {
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Model")) {
+        // 加载模型
         if (ImGui::MenuItem("Load..", "Ctrl+O")) {
           nfdchar_t *outPath = NULL;
           auto res = NFD_OpenDialog(NULL, NULL, &outPath);
@@ -45,6 +49,7 @@ class ModelPainter : public Painter {
             std::cout << "Success! Path: " << outPath << std::endl;
             Model model(outPath);
             modelLoaded.push_back(model);
+            // TODO: 分配着色器
             free(outPath);
           } else if (res == NFD_CANCEL)
             std::cout << "User pressed cancel." << std::endl;
@@ -54,29 +59,38 @@ class ModelPainter : public Painter {
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
+      ImGui::End();
     }
-    // 平行光
-    ImGui::BulletText("Directional Light");
-    ImGui::Checkbox("Enable Directional Light", &enableDirLight);
-    if (enableDirLight) {
-      ImGui::InputFloat3("Direction", glm::value_ptr(dirLightDir));
+    // 着色器
+    if (ImGui::CollapsingHeader("Shader")) {
+      // TODO: 添加, 删除, 编辑着色器
     }
-    // 聚光灯
-    ImGui::BulletText("SpotLight");
-    ImGui::Checkbox("Enable SpotLight", &enableSpotLight);
-    if (enableSpotLight) {
-      ImGui::DragFloat("Cut Off", &cutOff, .5f, 0, 30);
-      ImGui::DragFloat("Outer Cut Off", &outerCutOff, .5f, 1, 30);
-      cutOff = fmin(cutOff, outerCutOff);
-    }
-    // 点光源相关
-    ImGui::BulletText("Point Light");
-    if (ImGui::Button("Add Point Light"))
-      pointLights.push_back(glm::vec3(0, 0, 0));
-    if (pointLights.size() > 0) {
-      ImGui::BulletText("Point Light Pos");
-      for (auto it = pointLights.begin(); it != pointLights.end(); ++it) {
-        ImGui::DragFloat3("pos", glm::value_ptr(*it), .1f, -15, 15);
+    // 光源相关设置
+    if (ImGui::CollapsingHeader("Lights")) {
+      // 平行光
+      ImGui::BulletText("Directional Light");
+      ImGui::Checkbox("Enable Directional Light", &enableDirLight);
+      if (enableDirLight) {
+        ImGui::InputFloat3("Direction", glm::value_ptr(dirLightDir));
+      }
+      // 聚光灯
+      ImGui::BulletText("SpotLight");
+      ImGui::Checkbox("Enable SpotLight", &enableSpotLight);
+      if (enableSpotLight) {
+        ImGui::DragFloat("Cut Off", &cutOff, .5f, 0, 30);
+        ImGui::DragFloat("Outer Cut Off", &outerCutOff, .5f, 1, 30);
+        cutOff = fmin(cutOff, outerCutOff);
+      }
+      // 点光源相关
+      ImGui::BulletText("Point Light");
+      if (ImGui::Button("Add Point Light"))
+        pointLights.push_back(glm::vec3(0, 0, 0));
+      if (pointLights.size() > 0) {
+        if (ImGui::CollapsingHeader("Point Light Pos")) {
+          for (auto it = pointLights.begin(); it != pointLights.end(); ++it) {
+            ImGui::DragFloat3("pos", glm::value_ptr(*it), .1f, -15, 15);
+          }
+        }
       }
     }
   }
@@ -109,7 +123,7 @@ class ModelPainter : public Painter {
   std::vector<Model> modelLoaded;
   std::vector<glm::vec3> pointLights;
   Shader objShader;
-  bool enableSpotLight = false, enableDirLight;
+  bool enableSpotLight = false, enableDirLight, wdActive;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
 };

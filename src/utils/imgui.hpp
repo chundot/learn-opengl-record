@@ -5,7 +5,7 @@
 #include <imgui_impl_opengl3.h>
 #include "../painters/painter.hpp"
 
-namespace ImGui {
+namespace Gui {
 static bool toolActive = true;
 static void onInit(GLFWwindow *window) {
   IMGUI_CHECKVERSION();
@@ -18,9 +18,7 @@ static void onRender(Painter &paint) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  ImGui::Begin("Debug Tool", &toolActive, ImGuiWindowFlags_MenuBar);
   paint.onImGuiRender();
-  ImGui::End();
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -29,5 +27,5 @@ static void onShutDown() {
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
 }
-}  // namespace ImGui
+}  // namespace Gui
 #endif

@@ -52,7 +52,7 @@ int main() {
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
   ModelPainter paint;
-  ImGui::onInit(window);
+  Gui::onInit(window);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
     // 计算时间差
@@ -66,14 +66,14 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // 渲染
     paint.onRender();
-    ImGui::onRender(paint);
+    Gui::onRender(paint);
     // 绘制
     glfwSwapBuffers(window);
     // 检查事件触发 更新窗口状态 调用对应的回调函数
     glfwPollEvents();
   }
   // 释放ImGui资源
-  ImGui::onShutDown();
+  Gui::onShutDown();
   paint.terminate();
   // 释放资源
   glfwTerminate();

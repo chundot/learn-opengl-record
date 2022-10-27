@@ -86,6 +86,7 @@ class LightPainter : public Painter {
     }
   }
   void onImGuiRender() override {
+    ImGui::Begin("Debug Tool", &wdActive, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */
@@ -102,6 +103,7 @@ class LightPainter : public Painter {
     ImGui::DragFloat3("Light Dir", glm::value_ptr(pointLightPositions[0]), .2f,
                       -15, 15);
     ImGui::SliderInt("shininess", &shininess, 1, 256);
+    ImGui::End();
   }
   void updateTrans() {
     auto [m, v, p] = Camera::main->getMats();
@@ -110,6 +112,7 @@ class LightPainter : public Painter {
   }
 
  private:
+  bool wdActive;
   GLint shininess = 64;
   Shader objShader, lightShader;
   GLuint diffTex, specTex;
