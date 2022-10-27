@@ -60,7 +60,7 @@ class ModelPainter : public Painter {
             std::cout << "Success! Path: " << outPath << std::endl;
             Model model(outPath);
             modelLoaded.push_back(
-                {model, &defShader, glm::vec3(0), glm::vec3(.1f)});
+                {model, &defShader, glm::vec3(0, -.5f, 0), glm::vec3(.1f)});
             // TODO: 分配着色器
             free(outPath);
           } else if (res == NFD_CANCEL)
