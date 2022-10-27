@@ -1,5 +1,5 @@
 #version 330 core
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 4
 
 in vec2 TexCoords;
 in vec3 ourColor;

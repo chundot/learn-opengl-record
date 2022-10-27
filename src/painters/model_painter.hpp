@@ -8,30 +8,41 @@
 #include "../utils/imgui.hpp"
 #include "../utils/nfd.hpp"
 #include "../utils/model.hpp"
+struct ModelInfo {
+  Model model;
+  Shader *shader;
+  glm::vec3 pos, scale;
+};
 class ModelPainter : public Painter {
  public:
   ModelPainter()
-      : objShader("../../shaders/shader.vs", "../../shaders/shader.fs") {}
-  virtual void init() {}
-  virtual void terminate() {}
-  virtual void onRender() {
+      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs") {}
+  virtual void init() override {}
+  virtual void terminate() override {}
+  virtual void onRender() override {
     auto camera = *Camera::main;
     auto [_, view, proj] = camera.getMats();
     auto model = glm::mat4(1);
     model = glm::translate(model, glm::vec3(0, -.5f, 0));
     model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
-    objShader.use();
+    defShader.use();
     updDirLight(), updSpotLight();
-    objShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
+    defShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
                        glm::value_ptr(proj)),
-        objShader.setU("numPointLights", (int)pointLights.size()),
-        objShader.setU("material.shininess", 64.0f),
-        objShader.setPointLights(pointLights, (GLint)pointLights.size());
+        defShader.setU("numPointLights", (int)pointLights.size()),
+        defShader.setF3("viewPos", glm::value_ptr(camera.pos)),
+        defShader.setU("material.shininess", 64.0f),
+        defShader.setPointLights(pointLights, (GLint)pointLights.size());
     for (int i = 0; i < modelLoaded.size(); ++i) {
-      modelLoaded[i].Draw(objShader);
+      auto cur = modelLoaded[i];
+      model = glm::mat4(1);
+      model = glm::translate(model, cur.pos),
+      model = glm::scale(model, cur.scale);
+      cur.shader->use(), cur.shader->setMat4("model", glm::value_ptr(model));
+      cur.model.Draw(*cur.shader);
     }
   }
-  virtual void onImGuiRender() {
+  void onImGuiRender() override {
     ImGui::Begin("Debug Tool", &wdActive, ImGuiWindowFlags_MenuBar);
     // 顶部菜单栏
     if (ImGui::BeginMenuBar()) {
@@ -48,7 +59,8 @@ class ModelPainter : public Painter {
           if (res == NFD_OKAY) {
             std::cout << "Success! Path: " << outPath << std::endl;
             Model model(outPath);
-            modelLoaded.push_back(model);
+            modelLoaded.push_back(
+                {model, &defShader, glm::vec3(0), glm::vec3(.1f)});
             // TODO: 分配着色器
             free(outPath);
           } else if (res == NFD_CANCEL)
@@ -59,7 +71,6 @@ class ModelPainter : public Painter {
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
-      ImGui::End();
     }
     // 着色器
     if (ImGui::CollapsingHeader("Shader")) {
@@ -83,46 +94,62 @@ class ModelPainter : public Painter {
       }
       // 点光源相关
       ImGui::BulletText("Point Light");
+      if (ImGui::Button("Add Default Light")) {
+        pointLights.emplace_back(0.7f, 0.2f, 2.0f),
+            pointLights.emplace_back(2.3f, -3.3f, -4.0f),
+            pointLights.emplace_back(-4.0f, 2.0f, -12.0f),
+            pointLights.emplace_back(0.0f, 0.0f, -3.0f);
+      }
       if (ImGui::Button("Add Point Light"))
         pointLights.push_back(glm::vec3(0, 0, 0));
-      if (pointLights.size() > 0) {
-        if (ImGui::CollapsingHeader("Point Light Pos")) {
-          for (auto it = pointLights.begin(); it != pointLights.end(); ++it) {
-            ImGui::DragFloat3("pos", glm::value_ptr(*it), .1f, -15, 15);
-          }
+      if (pointLights.size() && ImGui::CollapsingHeader("Point Light Pos")) {
+        for (auto it = pointLights.begin(); it != pointLights.end(); ++it) {
+          ImGui::DragFloat3("pos", glm::value_ptr(*it), .1f, -15, 15);
         }
       }
     }
+    // 模型相关
+    if (modelLoaded.size() && ImGui::CollapsingHeader("Models")) {
+      std::string s = "Model";
+      for (auto it = modelLoaded.begin(); it != modelLoaded.end(); ++it) {
+        s.push_back((int)(it - modelLoaded.begin()) + '0');
+        ImGui::BulletText("%s", s.c_str());
+        ImGui::DragFloat3("pos", glm::value_ptr(it->pos), .1f, -15, 15);
+        ImGui::DragFloat3("scale", glm::value_ptr(it->scale), .05f, -15, 15);
+        s.pop_back();
+      }
+    }
+    ImGui::End();
   }
   void updDirLight() {
-    objShader.setU("enableDirLight", enableDirLight),
-        objShader.setF3("dirLight.direction", glm::value_ptr(dirLightDir)),
-        objShader.setU("dirLight.ambient", 0.05f, 0.05f, 0.05f),
-        objShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
-        objShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
+    defShader.setU("enableDirLight", enableDirLight),
+        defShader.setF3("dirLight.direction", glm::value_ptr(dirLightDir)),
+        defShader.setU("dirLight.ambient", 0.3f, 0.3f, 0.3f),
+        defShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
+        defShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
   }
   void updSpotLight() {
     auto camera = *Camera::main;
-    objShader.setU("enableSpotLight", enableSpotLight);
+    defShader.setU("enableSpotLight", enableSpotLight);
     if (enableSpotLight)
       // 聚光
-      objShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
-          objShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
-          objShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
-          objShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
-          objShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
-          objShader.setU("spotLight.constant", 1.0f),
-          objShader.setU("spotLight.linear", 0.09f),
-          objShader.setU("spotLight.quadratic", 0.032f),
-          objShader.setU("spotLight.cutOff", glm::cos(glm::radians(cutOff))),
-          objShader.setU("spotLight.outerCutOff",
+      defShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
+          defShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
+          defShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
+          defShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
+          defShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
+          defShader.setU("spotLight.constant", 1.0f),
+          defShader.setU("spotLight.linear", 0.09f),
+          defShader.setU("spotLight.quadratic", 0.032f),
+          defShader.setU("spotLight.cutOff", glm::cos(glm::radians(cutOff))),
+          defShader.setU("spotLight.outerCutOff",
                          glm::cos(glm::radians(outerCutOff)));
   }
 
  private:
-  std::vector<Model> modelLoaded;
+  std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
-  Shader objShader;
+  Shader defShader;
   bool enableSpotLight = false, enableDirLight, wdActive;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
