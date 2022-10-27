@@ -115,7 +115,11 @@ class ModelPainter : public Painter {
         s.push_back((int)(it - modelLoaded.begin()) + '0');
         ImGui::BulletText("%s", s.c_str());
         ImGui::DragFloat3("pos", glm::value_ptr(it->pos), .1f, -15, 15);
-        ImGui::DragFloat3("scale", glm::value_ptr(it->scale), .05f, -15, 15);
+        ImGui::Checkbox("Lock Ratio", &lockRatio);
+        ImGui::DragFloat3("scale", glm::value_ptr(it->scale), .01f, -15, 15);
+        if (lockRatio) {
+          it->scale.y = it->scale.z = it->scale.x;
+        }
         s.pop_back();
       }
     }
@@ -150,7 +154,7 @@ class ModelPainter : public Painter {
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
   Shader defShader;
-  bool enableSpotLight = false, enableDirLight, wdActive;
+  bool enableSpotLight = false, enableDirLight, wdActive, lockRatio;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
 };
