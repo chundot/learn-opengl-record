@@ -47,6 +47,26 @@ class Mesh {
     glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
   }
+  static std::vector<Vertex> vertexFrom1D(std::vector<float> arr,
+                                          int numOfVertex) {
+    std::vector<Vertex> v;
+    static glm::vec3 defNormal = {0, 1, 0};
+    int vertexSz = (int)arr.size() / numOfVertex;
+    for (int i = 0; i < numOfVertex; ++i) {
+      int idx = i * vertexSz, offset = 3;
+      glm::vec3 normal = defNormal;
+      if (vertexSz > 5) {
+        normal = {arr[idx + offset], arr[idx + offset + 1],
+                  arr[idx + offset + 2]};
+        offset += 3;
+      }
+      Vertex vertex{{arr[idx], arr[idx + 1], arr[idx + 2]},
+                    normal,
+                    {arr[idx + offset], arr[idx + offset + 1]}};
+      v.push_back(vertex);
+    }
+    return v;
+  }
 
  private:
   /*  渲染数据  */

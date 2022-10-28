@@ -9,10 +9,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-class Model {
+#include "imodel.hpp"
+class Model : public IModel {
  public:
   Model(const char *path) { loadModel(path); }
-  void Draw(Shader &shader) {
+  void Draw(Shader &shader) override {
     for (int i = 0; i < meshes.size(); ++i) {
       meshes[i].Draw(shader);
     }
