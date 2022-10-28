@@ -1,6 +1,8 @@
 ﻿#ifndef MODEL_PAINTER_HPP
 #define MODEL_PAINTER_HPP
 #include <algorithm>
+#include <numeric>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <list>
@@ -40,6 +42,9 @@ class ModelPainter : public Painter {
     // 启用模板测试
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    // 混合及混合函数
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   }
   virtual void terminate() override {}
   virtual void onRender() override {
@@ -48,9 +53,21 @@ class ModelPainter : public Painter {
     auto model = glm::mat4(1);
     model = glm::translate(model, glm::vec3(0, -.5f, 0));
     model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
-    for (int i = 0; i < modelLoaded.size(); ++i) {
+    if (sorted.size() != modelLoaded.size() || shouldSort) {
+      std::unordered_map<int, float> d;
+      sorted.resize(modelLoaded.size());
+      std::iota(sorted.begin(), sorted.end(), 0);
+      std::sort(sorted.begin(), sorted.end(), [&](int a, int b) -> bool {
+        if (d.find(a) == d.end())
+          d[a] = glm::length(camera.pos - modelLoaded[a].pos);
+        if (d.find(b) == d.end())
+          d[b] = glm::length(camera.pos - modelLoaded[b].pos);
+        return d[a] > d[b];
+      });
+    }
+    for (int i = 0; i < sorted.size(); ++i) {
       bool flag = false;
-      auto cur = modelLoaded[i];
+      auto cur = modelLoaded[sorted[i]];
       cur.shader->use()
           ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
                      glm::value_ptr(proj))
@@ -127,6 +144,11 @@ class ModelPainter : public Painter {
           modelLoaded.push_back(
               {new Plane("../../images/grass.png", "", 1), simpleShader});
         }
+        if (ImGui::MenuItem("Add Window", "")) {
+          modelLoaded.push_back(
+              {new Plane("../../images/blending_transparent_window.png", "", 1),
+               simpleShader});
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -174,8 +196,9 @@ class ModelPainter : public Painter {
         char id = (int)(it - modelLoaded.begin()) + '0';
         s.push_back(id);
         ImGui::BulletText("%s", s.c_str());
-        ImGui::DragFloat3((std::string("pos##") + id).c_str(),
-                          glm::value_ptr(it->pos), .1f, -15, 15);
+        if (ImGui::DragFloat3((std::string("pos##") + id).c_str(),
+                              glm::value_ptr(it->pos), .1f, -15, 15))
+          shouldSort = true;
         ImGui::Checkbox((std::string("Lock Ratio##") + id).c_str(), &lockRatio);
         ImGui::DragFloat3((std::string("scale##") + id).c_str(),
                           glm::value_ptr(it->scale), .01f, -15, 15);
@@ -219,8 +242,9 @@ class ModelPainter : public Painter {
  private:
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
+  std::vector<int> sorted;
   Shader defShader, singleColorShader, simpleShader;
-  bool enableSpotLight = false, enableDirLight, wdActive, lockRatio;
+  bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
 };
