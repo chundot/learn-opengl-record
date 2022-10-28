@@ -45,6 +45,8 @@ class ModelPainter : public Painter {
     // 混合及混合函数
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // 面剔除
+    // glEnable(GL_CULL_FACE);
   }
   virtual void terminate() override {}
   virtual void onRender() override {
