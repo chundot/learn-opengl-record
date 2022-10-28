@@ -35,78 +35,39 @@ class ModelPainter : public Painter {
       : defShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
                           false),
-        simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs") {}
+        simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
+        screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs") {
+  }
   virtual void init() override {
-    // 启用深度测试
-    glEnable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     // 启用模板测试
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    // glEnable(GL_STENCIL_TEST);
+    // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     // 混合及混合函数
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // 面剔除
     // glEnable(GL_CULL_FACE);
+    initFrameBuffer();
   }
   virtual void terminate() override {}
   virtual void onRender() override {
-    auto camera = *Camera::main;
-    auto [_, view, proj] = camera.getMats();
-    auto model = glm::mat4(1);
-    model = glm::translate(model, glm::vec3(0, -.5f, 0));
-    model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
-    if (sorted.size() != modelLoaded.size() || shouldSort) {
-      std::unordered_map<int, float> d;
-      sorted.resize(modelLoaded.size());
-      std::iota(sorted.begin(), sorted.end(), 0);
-      std::sort(sorted.begin(), sorted.end(), [&](int a, int b) -> bool {
-        if (d.find(a) == d.end())
-          d[a] = glm::length(camera.pos - modelLoaded[a].pos);
-        if (d.find(b) == d.end())
-          d[b] = glm::length(camera.pos - modelLoaded[b].pos);
-        return d[a] > d[b];
-      });
-    }
-    for (int i = 0; i < sorted.size(); ++i) {
-      bool flag = false;
-      auto cur = modelLoaded[sorted[i]];
-      cur.shader->use()
-          ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
-                     glm::value_ptr(proj))
-          ->setU("numPointLights", (int)pointLights.size())
-          ->setF3("viewPos", glm::value_ptr(camera.pos))
-          ->setU("material.shininess", 64.0f)
-          ->setPointLights(pointLights, (GLint)pointLights.size());
-      updDirLight(cur.shader), updSpotLight(cur.shader);
-      model = glm::mat4(1);
-      model = glm::translate(model, cur.pos),
-      model = glm::scale(model, cur.scale);
-      // TODO 修复渲染顺序导致的边框覆盖问题
-      if (cur.outlined) {
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);  // 所有的片段都应该更新模板缓冲
-        glStencilMask(0xFF);                // 启用模板缓冲写入
-        flag = true;
-      } else {
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
-      }
-      cur.shader->use()->setMat4("model", glm::value_ptr(model));
-      cur.model->Draw(*cur.shader);
-      if (cur.outlined && flag) {
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);  // 禁止模板缓冲的写入
-        glDisable(GL_DEPTH_TEST);
-        auto delta = glm::translate(glm::mat4(1), cur.pos);
-        delta = glm::scale(delta, 1.01f * cur.scale);
-        singleColorShader.use()
-            ->setTrans(glm::value_ptr(delta), glm::value_ptr(view),
-                       glm::value_ptr(proj))
-            ->setF3("objectColor", glm::value_ptr(cur.outlineColor));
-        cur.model->Draw(singleColorShader);
-      }
-      glStencilMask(0xFF);
-      glEnable(GL_DEPTH_TEST);
-    }
+    // 1.
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    DrawScene();
+    // 2.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    // 3.
+    screenShader.use();
+    glBindVertexArray(QVAO);
+    glDisable(GL_DEPTH_TEST);  // 2D不需要深度测试
+    glBindTexture(GL_TEXTURE_2D, textureBuffer);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
   }
   void onImGuiRender() override {
     ImGui::Begin("Debug Tool", &wdActive, ImGuiWindowFlags_MenuBar);
@@ -240,14 +201,123 @@ class ModelPainter : public Painter {
           ->setU("spotLight.cutOff", glm::cos(glm::radians(cutOff)))
           ->setU("spotLight.outerCutOff", glm::cos(glm::radians(outerCutOff)));
   }
+  virtual void setFrameSize(int width, int height) override {
+    this->width = width, this->height = height;
+  }
+  void initFrameBuffer() {
+    // 帧缓冲
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    // 纹理附件
+    glGenTextures(1, &textureBuffer);
+    glBindTexture(GL_TEXTURE_2D, textureBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           textureBuffer, 0);
+    // 渲染缓冲对象附件
+    glGenRenderbuffers(1, &RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                              GL_RENDERBUFFER, RBO);
+    // 检查错误
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // 屏幕矩阵
+    float quadVertices[] = {-1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, -1.0f,
+                            0.0f,  0.0f, 1.0f, -1.0f, 1.0f,  0.0f,
+
+                            -1.0f, 1.0f, 0.0f, 1.0f,  1.0f,  -1.0f,
+                            1.0f,  0.0f, 1.0f, 1.0f,  1.0f,  1.0f};
+    glGenVertexArrays(1, &QVAO);
+    glGenBuffers(1, &QVBO);
+    glBindVertexArray(QVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, QVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices,
+                 GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void *)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void *)(2 * sizeof(float)));
+
+    screenShader.use()->setU("screenTexture", 0);
+  }
 
  private:
+  unsigned int FBO, textureBuffer, RBO, QVAO, QVBO;
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
   std::vector<int> sorted;
-  Shader defShader, singleColorShader, simpleShader;
+  Shader defShader, singleColorShader, simpleShader, screenShader;
   bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
+  int width = 800, height = 600;
+  void DrawScene() {
+    auto camera = *Camera::main;
+    auto [_, view, proj] = camera.getMats();
+    auto model = glm::mat4(1);
+    model = glm::translate(model, glm::vec3(0, -.5f, 0));
+    model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
+    if (sorted.size() != modelLoaded.size() || shouldSort) {
+      std::unordered_map<int, float> d;
+      sorted.resize(modelLoaded.size());
+      std::iota(sorted.begin(), sorted.end(), 0);
+      std::sort(sorted.begin(), sorted.end(), [&](int a, int b) -> bool {
+        if (d.find(a) == d.end())
+          d[a] = glm::length(camera.pos - modelLoaded[a].pos);
+        if (d.find(b) == d.end())
+          d[b] = glm::length(camera.pos - modelLoaded[b].pos);
+        return d[a] > d[b];
+      });
+    }
+    for (int i = 0; i < sorted.size(); ++i) {
+      bool flag = false;
+      auto cur = modelLoaded[sorted[i]];
+      cur.shader->use()
+          ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
+                     glm::value_ptr(proj))
+          ->setU("numPointLights", (int)pointLights.size())
+          ->setF3("viewPos", glm::value_ptr(camera.pos))
+          ->setU("material.shininess", 64.0f)
+          ->setPointLights(pointLights, (GLint)pointLights.size());
+      updDirLight(cur.shader), updSpotLight(cur.shader);
+      model = glm::mat4(1);
+      model = glm::translate(model, cur.pos),
+      model = glm::scale(model, cur.scale);
+      // TODO 修复渲染顺序导致的边框覆盖问题
+      if (cur.outlined) {
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);  // 所有的片段都应该更新模板缓冲
+        glStencilMask(0xFF);                // 启用模板缓冲写入
+        flag = true;
+      } else {
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+      }
+      cur.shader->use()->setMat4("model", glm::value_ptr(model));
+      cur.model->Draw(*cur.shader);
+      if (cur.outlined && flag) {
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);  // 禁止模板缓冲的写入
+        glDisable(GL_DEPTH_TEST);
+        auto delta = glm::translate(glm::mat4(1), cur.pos);
+        delta = glm::scale(delta, 1.01f * cur.scale);
+        singleColorShader.use()
+            ->setTrans(glm::value_ptr(delta), glm::value_ptr(view),
+                       glm::value_ptr(proj))
+            ->setF3("objectColor", glm::value_ptr(cur.outlineColor));
+        cur.model->Draw(singleColorShader);
+      }
+      glStencilMask(0xFF);
+      glEnable(GL_DEPTH_TEST);
+    }
+  }
 };
 #endif

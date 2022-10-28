@@ -15,6 +15,7 @@ void processInput(GLFWwindow *window);
 
 GLfloat Time::deltaTime = 0, Time::lastFrame = 0;
 Camera *Camera::main;
+Painter *paint;
 int width = 1024, height = 768;
 
 int main() {
@@ -41,16 +42,19 @@ int main() {
   // 视口
   glViewport(0, 0, width, height);
   // 设置窗口变化时的回调
-  glfwSetFramebufferSizeCallback(
-      window, [](GLFWwindow *window, int w, int h) { glViewport(0, 0, w, h); });
+  glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int w, int h) {
+    glViewport(0, 0, w, h);
+    if (paint) paint->setFrameSize(w, h);
+  });
   // 相机初始化
   Camera camera;
   // 设置鼠标移动的回调
   glfwSetCursorPosCallback(window, Camera::main->setCursorPosCallback);
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
-  ModelPainter paint;
-  paint.init();
+  paint = new ModelPainter();
+  paint->setFrameSize(width, height);
+  paint->init();
   Gui::onInit(window);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {
@@ -60,11 +64,8 @@ int main() {
     // cubePositions[5].z = sin(curFrame) * r;
     // 处理输入
     processInput(window);
-    // 颜色
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     // 渲染
-    paint.onRender();
+    paint->onRender();
     Gui::onRender(paint);
     // 绘制
     glfwSwapBuffers(window);
@@ -73,7 +74,8 @@ int main() {
   }
   // 释放ImGui资源
   Gui::onShutDown();
-  paint.terminate();
+  paint->terminate();
+  delete paint;
   // 释放资源
   glfwTerminate();
 }

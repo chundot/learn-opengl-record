@@ -14,11 +14,11 @@ static void onInit(GLFWwindow *window) {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 330 core");
 }
-static void onRender(Painter &paint) {
+static void onRender(Painter *paint) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  paint.onImGuiRender();
+  paint->onImGuiRender();
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
