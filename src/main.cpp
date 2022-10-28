@@ -50,11 +50,7 @@ int main() {
   // 滚轮回调绑定
   glfwSetScrollCallback(window, Camera::main->mouseScrollCallback);
   ModelPainter paint;
-  // 启用深度测试
-  glEnable(GL_DEPTH_TEST);
-  // 启用模板测试
-  glEnable(GL_STENCIL_TEST);
-  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  paint.init();
   Gui::onInit(window);
   // 渲染循环
   while (!glfwWindowShouldClose(window)) {

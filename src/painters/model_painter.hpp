@@ -32,8 +32,15 @@ class ModelPainter : public Painter {
   ModelPainter()
       : defShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
-                          false) {}
-  virtual void init() override {}
+                          false),
+        simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs") {}
+  virtual void init() override {
+    // 启用深度测试
+    glEnable(GL_DEPTH_TEST);
+    // 启用模板测试
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  }
   virtual void terminate() override {}
   virtual void onRender() override {
     auto camera = *Camera::main;
@@ -41,17 +48,17 @@ class ModelPainter : public Painter {
     auto model = glm::mat4(1);
     model = glm::translate(model, glm::vec3(0, -.5f, 0));
     model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
-    defShader.use();
-    updDirLight(), updSpotLight();
-    defShader.setTrans(glm::value_ptr(model), glm::value_ptr(view),
-                       glm::value_ptr(proj)),
-        defShader.setU("numPointLights", (int)pointLights.size()),
-        defShader.setF3("viewPos", glm::value_ptr(camera.pos)),
-        defShader.setU("material.shininess", 64.0f),
-        defShader.setPointLights(pointLights, (GLint)pointLights.size());
     for (int i = 0; i < modelLoaded.size(); ++i) {
       bool flag = false;
       auto cur = modelLoaded[i];
+      cur.shader->use()
+          ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
+                     glm::value_ptr(proj))
+          ->setU("numPointLights", (int)pointLights.size())
+          ->setF3("viewPos", glm::value_ptr(camera.pos))
+          ->setU("material.shininess", 64.0f)
+          ->setPointLights(pointLights, (GLint)pointLights.size());
+      updDirLight(cur.shader), updSpotLight(cur.shader);
       model = glm::mat4(1);
       model = glm::translate(model, cur.pos),
       model = glm::scale(model, cur.scale);
@@ -64,7 +71,7 @@ class ModelPainter : public Painter {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
       }
-      cur.shader->use(), cur.shader->setMat4("model", glm::value_ptr(model));
+      cur.shader->use()->setMat4("model", glm::value_ptr(model));
       cur.model->Draw(*cur.shader);
       if (cur.outlined && flag) {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -72,12 +79,10 @@ class ModelPainter : public Painter {
         glDisable(GL_DEPTH_TEST);
         auto delta = glm::translate(glm::mat4(1), cur.pos);
         delta = glm::scale(delta, 1.01f * cur.scale);
-        singleColorShader.use(),
-            singleColorShader.setTrans(glm::value_ptr(delta),
-                                       glm::value_ptr(view),
-                                       glm::value_ptr(proj)),
-            singleColorShader.setF3("objectColor",
-                                    glm::value_ptr(cur.outlineColor));
+        singleColorShader.use()
+            ->setTrans(glm::value_ptr(delta), glm::value_ptr(view),
+                       glm::value_ptr(proj))
+            ->setF3("objectColor", glm::value_ptr(cur.outlineColor));
         cur.model->Draw(singleColorShader);
       }
       glStencilMask(0xFF);
@@ -117,6 +122,10 @@ class ModelPainter : public Painter {
         if (ImGui::MenuItem("Add Plane", "")) {
           modelLoaded.push_back(
               {new Plane("../../images/metal.png", ""), defShader});
+        }
+        if (ImGui::MenuItem("Add Grass", "")) {
+          modelLoaded.push_back(
+              {new Plane("../../images/grass.png", "", 1), simpleShader});
         }
         ImGui::EndMenu();
       }
@@ -183,35 +192,34 @@ class ModelPainter : public Painter {
     }
     ImGui::End();
   }
-  void updDirLight() {
-    defShader.setU("enableDirLight", enableDirLight),
-        defShader.setF3("dirLight.direction", glm::value_ptr(dirLightDir)),
-        defShader.setU("dirLight.ambient", 0.3f, 0.3f, 0.3f),
-        defShader.setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f),
-        defShader.setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
+  void updDirLight(Shader *shader) {
+    shader->setU("enableDirLight", enableDirLight)
+        ->setF3("dirLight.direction", glm::value_ptr(dirLightDir))
+        ->setU("dirLight.ambient", 0.3f, 0.3f, 0.3f)
+        ->setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f)
+        ->setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
   }
-  void updSpotLight() {
+  void updSpotLight(Shader *shader) {
     auto camera = *Camera::main;
-    defShader.setU("enableSpotLight", enableSpotLight);
+    shader->setU("enableSpotLight", enableSpotLight);
     if (enableSpotLight)
       // 聚光
-      defShader.setF3("spotLight.position", glm::value_ptr(camera.pos)),
-          defShader.setF3("spotLight.direction", glm::value_ptr(camera.front)),
-          defShader.setU("spotLight.ambient", 0.0f, 0.0f, 0.0f),
-          defShader.setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f),
-          defShader.setU("spotLight.specular", 1.0f, 1.0f, 1.0f),
-          defShader.setU("spotLight.constant", 1.0f),
-          defShader.setU("spotLight.linear", 0.09f),
-          defShader.setU("spotLight.quadratic", 0.032f),
-          defShader.setU("spotLight.cutOff", glm::cos(glm::radians(cutOff))),
-          defShader.setU("spotLight.outerCutOff",
-                         glm::cos(glm::radians(outerCutOff)));
+      shader->setF3("spotLight.position", glm::value_ptr(camera.pos))
+          ->setF3("spotLight.direction", glm::value_ptr(camera.front))
+          ->setU("spotLight.ambient", 0.0f, 0.0f, 0.0f)
+          ->setU("spotLight.diffuse", 1.0f, 1.0f, 1.0f)
+          ->setU("spotLight.specular", 1.0f, 1.0f, 1.0f)
+          ->setU("spotLight.constant", 1.0f)
+          ->setU("spotLight.linear", 0.09f)
+          ->setU("spotLight.quadratic", 0.032f)
+          ->setU("spotLight.cutOff", glm::cos(glm::radians(cutOff)))
+          ->setU("spotLight.outerCutOff", glm::cos(glm::radians(outerCutOff)));
   }
 
  private:
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
-  Shader defShader, singleColorShader;
+  Shader defShader, singleColorShader, simpleShader;
   bool enableSpotLight = false, enableDirLight, wdActive, lockRatio;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;

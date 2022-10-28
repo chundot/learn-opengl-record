@@ -80,28 +80,38 @@ class Shader {
   // 程序ID
   GLuint id;
   // 使用程序
-  void use() { glUseProgram(id); }
+  Shader *use() {
+    glUseProgram(id);
+    return this;
+  }
   // uniform工具
-  void setU(const std::string &name, bool value) const {
+  Shader *setU(const std::string &name, bool value) {
     glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+    return this;
   }
-  void setU(const std::string &name, int value) const {
+  Shader *setU(const std::string &name, int value) {
     glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+    return this;
   }
-  void setU(const std::string &name, float value) const {
+  Shader *setU(const std::string &name, float value) {
     glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+    return this;
   }
-  void setU(const std::string &name, float x, float y, float z, float w) const {
+  Shader *setU(const std::string &name, float x, float y, float z, float w) {
     glUniform4f(glGetUniformLocation(id, name.c_str()), x, y, z, w);
+    return this;
   }
-  void setU(const std::string &name, float x, float y, float z) const {
+  Shader *setU(const std::string &name, float x, float y, float z) {
     glUniform3f(glGetUniformLocation(id, name.c_str()), x, y, z);
+    return this;
   }
-  void setF3(const std::string &name, float *v) {
+  Shader *setF3(const std::string &name, float *v) {
     glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, v);
+    return this;
   }
-  void setMat4(const std::string &name, float *m) const {
+  Shader *setMat4(const std::string &name, float *m) {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, m);
+    return this;
   }
   void setPointLights(glm::vec3 pos[], GLint size) {
     std::string s;
@@ -135,10 +145,11 @@ class Shader {
       setU(s + ".quadratic", 0.032f);
     }
   }
-  void setTrans(float *model, float *view, float *proj) {
+  Shader *setTrans(float *model, float *view, float *proj) {
     setMat4("model", model);
     setMat4("view", view);
     setMat4("proj", proj);
+    return this;
   }
 };
 #endif
