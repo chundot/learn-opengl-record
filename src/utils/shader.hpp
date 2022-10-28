@@ -13,8 +13,11 @@
 
 class Shader {
  public:
+  bool hasTexture;
   // 构造器读取并构建着色器
-  Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
+  Shader(const GLchar *vertexPath, const GLchar *fragmentPath,
+         bool hasTexture = true)
+      : hasTexture(hasTexture) {
     std::ifstream vShaderFile, fShaderFile;
     std::string vertexCode, fragmentCode;
     try {

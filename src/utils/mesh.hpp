@@ -28,18 +28,20 @@ class Mesh {
     setupMesh();
   }
   void Draw(Shader &shader) {
-    unsigned int diffNum = 1, specNum = 1;
-    for (int i = 0; i < textures.size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
-      std::string num, name = textures[i].type;
-      if (name == "texture_diffuse")
-        num = std::to_string(diffNum++);
-      else if (name == "texture_specular")
-        num = std::to_string(specNum++);
-      shader.setU(("material." + name + num).c_str(), i);
-      glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    if (shader.hasTexture) {
+      unsigned int diffNum = 1, specNum = 1;
+      for (int i = 0; i < textures.size(); ++i) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        std::string num, name = textures[i].type;
+        if (name == "texture_diffuse")
+          num = std::to_string(diffNum++);
+        else if (name == "texture_specular")
+          num = std::to_string(specNum++);
+        shader.setU(("material." + name + num).c_str(), i);
+        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+      }
+      glActiveTexture(GL_TEXTURE0);
     }
-    glActiveTexture(GL_TEXTURE0);
     // 绘制网格
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);

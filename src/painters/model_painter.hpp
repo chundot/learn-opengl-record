@@ -12,11 +12,23 @@ struct ModelInfo {
   Model model;
   Shader *shader;
   glm::vec3 pos, scale;
+  // 描边
+  bool outlined;
+  glm::vec3 outlineColor;
+  ModelInfo(Model model, Shader &shader)
+      : model(model),
+        shader(&shader),
+        pos(0, -.5f, 0),
+        scale(.1f),
+        outlined(false),
+        outlineColor(.4f, .7f, .4f){};
 };
 class ModelPainter : public Painter {
  public:
   ModelPainter()
-      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs") {}
+      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
+        singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
+                          false) {}
   virtual void init() override {}
   virtual void terminate() override {}
   virtual void onRender() override {
@@ -38,8 +50,28 @@ class ModelPainter : public Painter {
       model = glm::mat4(1);
       model = glm::translate(model, cur.pos),
       model = glm::scale(model, cur.scale);
+      if (cur.outlined) {
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);  // 所有的片段都应该更新模板缓冲
+        glStencilMask(0xFF);                // 启用模板缓冲写入
+      }
       cur.shader->use(), cur.shader->setMat4("model", glm::value_ptr(model));
       cur.model.Draw(*cur.shader);
+      if (cur.outlined) {
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);  // 禁止模板缓冲的写入
+        glDisable(GL_DEPTH_TEST);
+        auto delta = glm::translate(glm::mat4(1), cur.pos);
+        delta = glm::scale(delta, glm::vec3(0.101f));
+        singleColorShader.use(),
+            singleColorShader.setTrans(glm::value_ptr(delta),
+                                       glm::value_ptr(view),
+                                       glm::value_ptr(proj)),
+            singleColorShader.setF3("objectColor",
+                                    glm::value_ptr(cur.outlineColor));
+        cur.model.Draw(singleColorShader);
+        glStencilMask(0xFF);
+        glEnable(GL_DEPTH_TEST);
+      }
     }
   }
   void onImGuiRender() override {
@@ -59,8 +91,7 @@ class ModelPainter : public Painter {
           if (res == NFD_OKAY) {
             std::cout << "Success! Path: " << outPath << std::endl;
             Model model(outPath);
-            modelLoaded.push_back(
-                {model, &defShader, glm::vec3(0, -.5f, 0), glm::vec3(.1f)});
+            modelLoaded.push_back({model, defShader});
             // TODO: 分配着色器
             free(outPath);
           } else if (res == NFD_CANCEL)
@@ -120,6 +151,10 @@ class ModelPainter : public Painter {
         if (lockRatio) {
           it->scale.y = it->scale.z = it->scale.x;
         }
+        ImGui::Checkbox("Outline", &it->outlined);
+        if (it->outlined) {
+          ImGui::ColorEdit3("Outline Color", glm::value_ptr(it->outlineColor));
+        }
         s.pop_back();
       }
     }
@@ -153,7 +188,7 @@ class ModelPainter : public Painter {
  private:
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
-  Shader defShader;
+  Shader defShader, singleColorShader;
   bool enableSpotLight = false, enableDirLight, wdActive, lockRatio;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
