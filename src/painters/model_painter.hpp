@@ -1,21 +1,25 @@
 ﻿#ifndef MODEL_PAINTER_HPP
 #define MODEL_PAINTER_HPP
+#include <algorithm>
 #include <string>
 #include <vector>
+#include <list>
 #include "painter.hpp"
 #include "../utils/shader.hpp"
 #include "../utils/camera.hpp"
 #include "../utils/imgui.hpp"
 #include "../utils/nfd.hpp"
 #include "../utils/model.hpp"
+#include "../utils/cube.hpp"
+#include "../utils/plane.hpp"
 struct ModelInfo {
-  Model model;
+  std::shared_ptr<IModel> model;
   Shader *shader;
   glm::vec3 pos, scale;
   // 描边
   bool outlined;
   glm::vec3 outlineColor;
-  ModelInfo(Model model, Shader &shader)
+  ModelInfo(IModel *model, Shader &shader)
       : model(model),
         shader(&shader),
         pos(0, -.5f, 0),
@@ -46,32 +50,38 @@ class ModelPainter : public Painter {
         defShader.setU("material.shininess", 64.0f),
         defShader.setPointLights(pointLights, (GLint)pointLights.size());
     for (int i = 0; i < modelLoaded.size(); ++i) {
+      bool flag = false;
       auto cur = modelLoaded[i];
       model = glm::mat4(1);
       model = glm::translate(model, cur.pos),
       model = glm::scale(model, cur.scale);
+      // TODO 修复渲染顺序导致的边框覆盖问题
       if (cur.outlined) {
         glStencilFunc(GL_ALWAYS, 1, 0xFF);  // 所有的片段都应该更新模板缓冲
         glStencilMask(0xFF);                // 启用模板缓冲写入
+        flag = true;
+      } else {
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
       }
       cur.shader->use(), cur.shader->setMat4("model", glm::value_ptr(model));
-      cur.model.Draw(*cur.shader);
-      if (cur.outlined) {
+      cur.model->Draw(*cur.shader);
+      if (cur.outlined && flag) {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);  // 禁止模板缓冲的写入
         glDisable(GL_DEPTH_TEST);
         auto delta = glm::translate(glm::mat4(1), cur.pos);
-        delta = glm::scale(delta, glm::vec3(0.101f));
+        delta = glm::scale(delta, 1.01f * cur.scale);
         singleColorShader.use(),
             singleColorShader.setTrans(glm::value_ptr(delta),
                                        glm::value_ptr(view),
                                        glm::value_ptr(proj)),
             singleColorShader.setF3("objectColor",
                                     glm::value_ptr(cur.outlineColor));
-        cur.model.Draw(singleColorShader);
-        glStencilMask(0xFF);
-        glEnable(GL_DEPTH_TEST);
+        cur.model->Draw(singleColorShader);
       }
+      glStencilMask(0xFF);
+      glEnable(GL_DEPTH_TEST);
     }
   }
   void onImGuiRender() override {
@@ -90,14 +100,23 @@ class ModelPainter : public Painter {
           auto res = NFD_OpenDialog(NULL, NULL, &outPath);
           if (res == NFD_OKAY) {
             std::cout << "Success! Path: " << outPath << std::endl;
-            Model model(outPath);
-            modelLoaded.push_back({model, defShader});
+            modelLoaded.push_back({new Model(outPath), defShader});
             // TODO: 分配着色器
             free(outPath);
           } else if (res == NFD_CANCEL)
             std::cout << "User pressed cancel." << std::endl;
           else
             std::cout << "Error: " << NFD_GetError() << std::endl;
+        }
+        if (ImGui::MenuItem("Add Cube", "")) {
+          modelLoaded.push_back(
+              {new Cube("../../images/container2.png",
+                        "../../images/container2_specular.png"),
+               defShader});
+        }
+        if (ImGui::MenuItem("Add Plane", "")) {
+          modelLoaded.push_back(
+              {new Plane("../../images/metal.png", ""), defShader});
         }
         ImGui::EndMenu();
       }
@@ -143,17 +162,21 @@ class ModelPainter : public Painter {
     if (modelLoaded.size() && ImGui::CollapsingHeader("Models")) {
       std::string s = "Model";
       for (auto it = modelLoaded.begin(); it != modelLoaded.end(); ++it) {
-        s.push_back((int)(it - modelLoaded.begin()) + '0');
+        char id = (int)(it - modelLoaded.begin()) + '0';
+        s.push_back(id);
         ImGui::BulletText("%s", s.c_str());
-        ImGui::DragFloat3("pos", glm::value_ptr(it->pos), .1f, -15, 15);
-        ImGui::Checkbox("Lock Ratio", &lockRatio);
-        ImGui::DragFloat3("scale", glm::value_ptr(it->scale), .01f, -15, 15);
+        ImGui::DragFloat3((std::string("pos##") + id).c_str(),
+                          glm::value_ptr(it->pos), .1f, -15, 15);
+        ImGui::Checkbox((std::string("Lock Ratio##") + id).c_str(), &lockRatio);
+        ImGui::DragFloat3((std::string("scale##") + id).c_str(),
+                          glm::value_ptr(it->scale), .01f, -15, 15);
         if (lockRatio) {
           it->scale.y = it->scale.z = it->scale.x;
         }
-        ImGui::Checkbox("Outline", &it->outlined);
+        ImGui::Checkbox((std::string("Outline##") + id).c_str(), &it->outlined);
         if (it->outlined) {
-          ImGui::ColorEdit3("Outline Color", glm::value_ptr(it->outlineColor));
+          ImGui::ColorEdit3((std::string("Outline Color##") + id).c_str(),
+                            glm::value_ptr(it->outlineColor));
         }
         s.pop_back();
       }

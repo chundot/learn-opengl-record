@@ -1,5 +1,6 @@
 ﻿#ifndef MISC_HPP
 #define MISC_HPP
+#include <algorithm>
 #include <iostream>
 #include <tuple>
 #include <glad/glad.h>
@@ -42,17 +43,12 @@ static GLuint loadTexture(const GLchar *imgPath, GLint mode,
   stbi_image_free(data);
   return tex;
 }
-static GLuint textureFromFile(const char *path, const std::string &directory,
-                              bool gamma = false) {
-  auto filename = std::string(path);
-  filename = directory + '/' + filename;
-
+static GLuint textureFromFile(const char *path, bool gamma = false) {
   unsigned int textureID;
   glGenTextures(1, &textureID);
 
   int width, height, nrComponents;
-  unsigned char *data =
-      stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
+  unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
   if (data) {
     GLenum format;
     if (nrComponents == 1)
@@ -78,8 +74,14 @@ static GLuint textureFromFile(const char *path, const std::string &directory,
     std::cout << "Texture failed to load at path: " << path << std::endl;
     stbi_image_free(data);
   }
-
   return textureID;
+}
+static GLuint textureFromFile(const char *path, const std::string &directory,
+                              bool gamma = false) {
+  auto filename = std::string(path);
+  filename = directory + '/' + filename;
+
+  return textureFromFile(filename.c_str());
 }
 }  // namespace Misc
 #endif
