@@ -10,9 +10,8 @@ class LightPainter : public Painter {
   LightPainter()
       : objShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
         lightShader("../../shaders/shader.vs", "../../shaders/light.fs") {
-    diffTex = Misc::loadTexture("../../images/container2.png", GL_RGBA, true),
-    specTex = Misc::loadTexture("../../images/container2_specular.png", GL_RGBA,
-                                true);
+    diffTex = Misc::textureFromFile("../../images/container2.png"),
+    specTex = Misc::textureFromFile("../../images/container2_specular.png");
     init();
   }
   void init() override {
