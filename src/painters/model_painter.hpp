@@ -182,7 +182,7 @@ class ModelPainter : public Painter {
   void updDirLight(Shader *shader) {
     shader->setU("enableDirLight", enableDirLight)
         ->setF3("dirLight.direction", glm::value_ptr(dirLightDir))
-        ->setU("dirLight.ambient", 0.4f, 0.4f, 0.4f)
+        ->setU("dirLight.ambient", 0.3f, 0.3f, 0.3f)
         ->setU("dirLight.diffuse", 0.5f, 0.5f, 0.5f)
         ->setU("dirLight.specular", 0.6f, 0.6f, 0.6f);
   }
@@ -266,11 +266,7 @@ class ModelPainter : public Painter {
     auto camera = *Camera::main;
     auto [_, view, proj] = camera.getMats();
     auto model = glm::mat4(1);
-    auto newView = glm::mat4(glm::mat3(view));
-    skybox.shader.use()
-        ->setMat4("projection", glm::value_ptr(proj))
-        ->setMat4("view", glm::value_ptr(newView));
-    skybox.Draw();
+    // 排序
     if (sorted.size() != modelLoaded.size() || shouldSort) {
       std::unordered_map<int, float> d;
       sorted.resize(modelLoaded.size());
@@ -283,6 +279,7 @@ class ModelPainter : public Painter {
         return d[a] > d[b];
       });
     }
+    // 其他所有物体
     for (int i = 0; i < sorted.size(); ++i) {
       bool flag = false;
       auto cur = modelLoaded[sorted[i]];
@@ -323,6 +320,12 @@ class ModelPainter : public Painter {
       glStencilMask(0xFF);
       glEnable(GL_DEPTH_TEST);
     }
+    // 天空盒子渲染
+    auto newView = glm::mat4(glm::mat3(view));
+    skybox.shader.use()
+        ->setMat4("projection", glm::value_ptr(proj))
+        ->setMat4("view", glm::value_ptr(newView));
+    skybox.Draw();
   }
 };
 #endif

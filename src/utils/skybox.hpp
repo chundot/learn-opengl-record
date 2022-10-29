@@ -45,10 +45,10 @@ class Skybox {
     shader.setU("skybox", 0);
   }
   void Draw() {
-    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
     glBindVertexArray(0);
   }
 

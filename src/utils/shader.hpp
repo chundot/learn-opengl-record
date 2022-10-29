@@ -137,7 +137,7 @@ class Shader {
       oss << "pointLights[" << (GLchar)('0' + (it - pos.begin())) << ']';
       s = oss.str();
       setF3(s + ".position", glm::value_ptr(p));
-      setU(s + ".ambient", 0.15f, 0.15f, 0.15f);
+      setU(s + ".ambient", 0.1f, 0.1f, 0.1f);
       setU(s + ".diffuse", 0.8f, 0.8f, 0.8f);
       setU(s + ".specular", 1.0f, 1.0f, 1.0f);
       setU(s + ".constant", 1.0f);
