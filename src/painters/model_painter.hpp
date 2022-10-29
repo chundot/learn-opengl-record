@@ -39,7 +39,7 @@ class ModelPainter : public Painter {
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
         screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
         testCubeShader("../../shaders/testcube.vs",
-                       "../../shaders/reflect.fs") {}
+                       "../../shaders/refract.fs") {}
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     // 启用模板测试
