@@ -95,7 +95,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     vec3 specular = light.specular * spec * vec3(texture(material.tex_spec1, TexCoords));
     // 反射skybox
     vec3 R = reflect(-viewDir, spNormal);
-    vec3 sky = texture(skybox, R).rgb * vec3(texture(material.tex_refl1, TexCoords));
+    vec3 sky = texture(skybox, R).rgb * vec3(texture(material.tex_refl1, TexCoords)) * 0.9;
     return (ambient + diffuse + specular + sky);
 }
 
@@ -114,10 +114,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     vec3 ambient = light.ambient * vec3(texture(material.tex_diff1, TexCoords));
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.tex_diff1, TexCoords));
     vec3 specular = light.specular * spec * vec3(texture(material.tex_spec1, TexCoords));
-    // 反射skybox
-    vec3 R = reflect(-viewDir, spNormal);
-    vec3 sky = texture(skybox, R).rgb * vec3(texture(material.tex_refl1, TexCoords));
-    return (ambient + diffuse + specular + sky) * attenuation;
+    return (ambient + diffuse + specular) * attenuation;
 }
 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
@@ -138,8 +135,5 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     vec3 ambient = light.ambient * vec3(texture(material.tex_diff1, TexCoords));
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.tex_diff1, TexCoords));
     vec3 specular = light.specular * spec * vec3(texture(material.tex_spec1, TexCoords));
-    // 反射skybox
-    vec3 R = reflect(-viewDir, spNormal);
-    vec3 sky = texture(skybox, R).rgb * vec3(texture(material.tex_refl1, TexCoords));
-    return vec3(ambient + diffuse + specular + sky) * intensity * attenuation;
+    return vec3(ambient + diffuse + specular) * intensity * attenuation;
 }

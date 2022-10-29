@@ -89,8 +89,8 @@ class Model : public IModel {
           loadMaterialTexture(material, aiTextureType_SPECULAR, "tex_spec");
       textures.insert(textures.end(), specMaps.begin(), specMaps.end());
       auto reflMaps =
-          loadMaterialTexture(material, aiTextureType_REFLECTION, "tex_refl");
-      textures.insert(textures.end(), specMaps.begin(), specMaps.end());
+          loadMaterialTexture(material, aiTextureType_AMBIENT, "tex_refl");
+      textures.insert(textures.end(), reflMaps.begin(), reflMaps.end());
     }
     return Mesh(vertices, indices, textures);
   }
