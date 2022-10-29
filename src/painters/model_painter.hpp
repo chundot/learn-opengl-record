@@ -37,8 +37,9 @@ class ModelPainter : public Painter {
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
                           false),
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
-        screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs") {
-  }
+        screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
+        testCubeShader("../../shaders/testcube.vs",
+                       "../../shaders/reflect.fs") {}
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     // 启用模板测试
@@ -112,6 +113,9 @@ class ModelPainter : public Painter {
           modelLoaded.push_back(
               {new Plane("../../images/blending_transparent_window.png", "", 1),
                simpleShader});
+        }
+        if (ImGui::MenuItem("Add Test Cube", "")) {
+          modelLoaded.push_back({new Cube("", ""), testCubeShader});
         }
         ImGui::EndMenu();
       }
@@ -257,7 +261,8 @@ class ModelPainter : public Painter {
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
   std::vector<int> sorted;
-  Shader defShader, singleColorShader, simpleShader, screenShader;
+  Shader defShader, singleColorShader, simpleShader, screenShader,
+      testCubeShader;
   bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
@@ -284,6 +289,7 @@ class ModelPainter : public Painter {
       bool flag = false;
       auto cur = modelLoaded[sorted[i]];
       cur.shader->use()
+          ->setF3("cameraPos", glm::value_ptr(camera.pos))
           ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
                      glm::value_ptr(proj))
           ->setU("numPointLights", (int)pointLights.size())
