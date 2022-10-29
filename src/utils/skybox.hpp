@@ -6,6 +6,7 @@
 #include "misc.hpp"
 class Skybox {
  public:
+  unsigned int cubemapTexId;
   Shader shader;
   Skybox() : shader("../../shaders/skybox.vs", "../../shaders/skybox.fs") {
     init();
@@ -33,8 +34,7 @@ class Skybox {
     static std::vector<const char *> faces = {"right.jpg", "left.jpg",
                                               "top.jpg",   "bottom.jpg",
                                               "front.jpg", "back.jpg"};
-    auto cubemapTexture =
-        Misc::loadCubemapTexture(faces, "../../images/skybox/0/");
+    cubemapTexId = Misc::loadCubemapTexture(faces, "../../images/skybox/0/");
     glGenVertexArrays(1, &VAO), glGenBuffers(1, &VBO);
     glBindVertexArray(VAO), glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices,

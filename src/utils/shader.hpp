@@ -13,11 +13,11 @@
 
 class Shader {
  public:
-  bool hasTexture;
+  bool hasTexture, needSkybox;
   // 构造器读取并构建着色器
   Shader(const GLchar *vertexPath, const GLchar *fragmentPath,
-         bool hasTexture = true)
-      : hasTexture(hasTexture) {
+         bool hasTexture = true, bool needSkybox = false)
+      : hasTexture(hasTexture), needSkybox(needSkybox) {
     std::ifstream vShaderFile, fShaderFile;
     std::string vertexCode, fragmentCode;
     try {
@@ -78,7 +78,7 @@ class Shader {
     glDeleteShader(fragment);
   }
   // 程序ID
-  GLuint id;
+  GLuint id, texId;
   // 使用程序
   Shader *use() {
     glUseProgram(id);
@@ -111,6 +111,14 @@ class Shader {
   }
   Shader *setMat4(const std::string &name, float *m) {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, m);
+    return this;
+  }
+  Shader *setSkybox() {
+    if (needSkybox) {
+      glActiveTexture(GL_TEXTURE3);
+      glBindTexture(GL_TEXTURE_CUBE_MAP, texId);
+      glActiveTexture(GL_TEXTURE0);
+    }
     return this;
   }
   void setPointLights(glm::vec3 pos[], GLint size) {

@@ -82,11 +82,14 @@ class Model : public IModel {
     // 处理材质
     if (mesh->mMaterialIndex >= 0) {
       auto material = scene->mMaterials[mesh->mMaterialIndex];
-      auto diffMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE,
-                                          "texture_diffuse");
+      auto diffMaps =
+          loadMaterialTexture(material, aiTextureType_DIFFUSE, "tex_diff");
       textures.insert(textures.end(), diffMaps.begin(), diffMaps.end());
-      auto specMaps = loadMaterialTexture(material, aiTextureType_SPECULAR,
-                                          "texture_specular");
+      auto specMaps =
+          loadMaterialTexture(material, aiTextureType_SPECULAR, "tex_spec");
+      textures.insert(textures.end(), specMaps.begin(), specMaps.end());
+      auto reflMaps =
+          loadMaterialTexture(material, aiTextureType_REFLECTION, "tex_refl");
       textures.insert(textures.end(), specMaps.begin(), specMaps.end());
     }
     return Mesh(vertices, indices, textures);

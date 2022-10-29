@@ -33,13 +33,17 @@ struct ModelInfo {
 class ModelPainter : public Painter {
  public:
   ModelPainter()
-      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs"),
+      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs", true,
+                  true),
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
                           false),
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
         screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
         testCubeShader("../../shaders/testcube.vs",
-                       "../../shaders/refract.fs") {}
+                       "../../shaders/refract.fs") {
+    defShader.texId = skybox.cubemapTexId;
+    defShader.use()->setU("skybox", 3);
+  }
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     // 启用模板测试
@@ -289,7 +293,6 @@ class ModelPainter : public Painter {
       bool flag = false;
       auto cur = modelLoaded[sorted[i]];
       cur.shader->use()
-          ->setF3("cameraPos", glm::value_ptr(camera.pos))
           ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
                      glm::value_ptr(proj))
           ->setU("numPointLights", (int)pointLights.size())
@@ -309,7 +312,7 @@ class ModelPainter : public Painter {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
       }
-      cur.shader->use()->setMat4("model", glm::value_ptr(model));
+      cur.shader->use()->setSkybox()->setMat4("model", glm::value_ptr(model));
       cur.model->Draw(*cur.shader);
       if (cur.outlined && flag) {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);

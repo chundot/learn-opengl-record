@@ -29,14 +29,16 @@ class Mesh {
   }
   void Draw(Shader &shader) {
     if (shader.hasTexture) {
-      unsigned int diffNum = 1, specNum = 1;
+      unsigned int diffNum = 1, specNum = 1, reflNum = 1;
       for (int i = 0; i < textures.size(); ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         std::string num, name = textures[i].type;
-        if (name == "texture_diffuse")
+        if (name == "tex_diff")
           num = std::to_string(diffNum++);
-        else if (name == "texture_specular")
+        else if (name == "tex_spec")
           num = std::to_string(specNum++);
+        else if (name == "tex_refl")
+          num = std::to_string(reflNum++);
         shader.setU(("material." + name + num).c_str(), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
       }
