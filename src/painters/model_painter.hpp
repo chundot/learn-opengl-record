@@ -14,6 +14,7 @@
 #include "../utils/model.hpp"
 #include "../utils/cube.hpp"
 #include "../utils/plane.hpp"
+#include "../utils/skybox.hpp"
 struct ModelInfo {
   std::shared_ptr<IModel> model;
   Shader *shader;
@@ -181,9 +182,9 @@ class ModelPainter : public Painter {
   void updDirLight(Shader *shader) {
     shader->setU("enableDirLight", enableDirLight)
         ->setF3("dirLight.direction", glm::value_ptr(dirLightDir))
-        ->setU("dirLight.ambient", 0.3f, 0.3f, 0.3f)
-        ->setU("dirLight.diffuse", 0.4f, 0.4f, 0.4f)
-        ->setU("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        ->setU("dirLight.ambient", 0.4f, 0.4f, 0.4f)
+        ->setU("dirLight.diffuse", 0.5f, 0.5f, 0.5f)
+        ->setU("dirLight.specular", 0.6f, 0.6f, 0.6f);
   }
   void updSpotLight(Shader *shader) {
     auto camera = *Camera::main;
@@ -251,6 +252,7 @@ class ModelPainter : public Painter {
   }
 
  private:
+  Skybox skybox;
   unsigned int FBO, textureBuffer, RBO, QVAO, QVBO;
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
@@ -264,8 +266,11 @@ class ModelPainter : public Painter {
     auto camera = *Camera::main;
     auto [_, view, proj] = camera.getMats();
     auto model = glm::mat4(1);
-    model = glm::translate(model, glm::vec3(0, -.5f, 0));
-    model = glm::scale(model, glm::vec3(.1f, .1f, .1f));
+    auto newView = glm::mat4(glm::mat3(view));
+    skybox.shader.use()
+        ->setMat4("projection", glm::value_ptr(proj))
+        ->setMat4("view", glm::value_ptr(newView));
+    skybox.Draw();
     if (sorted.size() != modelLoaded.size() || shouldSort) {
       std::unordered_map<int, float> d;
       sorted.resize(modelLoaded.size());
