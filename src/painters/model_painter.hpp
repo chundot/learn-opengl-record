@@ -43,6 +43,8 @@ class ModelPainter : public Painter {
                        "../../shaders/refract.fs") {
     defShader.texId = skybox.cubemapTexId;
     defShader.use()->setU("skybox", 3);
+    defShader.BindUBlock(), singleColorShader.BindUBlock(),
+        testCubeShader.BindUBlock();
   }
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -293,8 +295,6 @@ class ModelPainter : public Painter {
       bool flag = false;
       auto cur = modelLoaded[sorted[i]];
       cur.shader->use()
-          ->setTrans(glm::value_ptr(model), glm::value_ptr(view),
-                     glm::value_ptr(proj))
           ->setU("numPointLights", (int)pointLights.size())
           ->setF3("viewPos", glm::value_ptr(camera.pos))
           ->setU("material.shininess", 64.0f)
@@ -321,8 +321,7 @@ class ModelPainter : public Painter {
         auto delta = glm::translate(glm::mat4(1), cur.pos);
         delta = glm::scale(delta, 1.01f * cur.scale);
         singleColorShader.use()
-            ->setTrans(glm::value_ptr(delta), glm::value_ptr(view),
-                       glm::value_ptr(proj))
+            ->setMat4("model", glm::value_ptr(delta))
             ->setF3("objectColor", glm::value_ptr(cur.outlineColor));
         cur.model->Draw(singleColorShader);
       }

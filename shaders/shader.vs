@@ -10,8 +10,11 @@ out vec3 FragPos;
 out vec3 spNormal;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
+layout (std140) uniform Matrices
+{
+    mat4 proj;
+    mat4 view;
+};
 
 void main() {
     gl_Position = proj * view * model * vec4(aPos, 1.0);

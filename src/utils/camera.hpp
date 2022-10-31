@@ -29,6 +29,13 @@ class Camera {
     target = glm::vec3(0, 0, 0);
     euler = {-90, 0, 0};
     if (!main) main = this;
+    // 配置ubo
+    glGenBuffers(1, &uboMatrices), glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL,
+                 GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0,
+                      2 * sizeof(glm::mat4));
   }
   void updateEuler(float xOffset, float yOffset) {
     euler.pitch += yOffset, euler.yaw += xOffset;
@@ -67,6 +74,12 @@ class Camera {
     // 透视投影
     if (getProj)
       proj = glm::perspective(glm::radians(fov), 4.0f / 3.0f, .1f, 100.0f);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
+                    glm::value_ptr(proj));
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
+                    glm::value_ptr(view));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
     return std::make_tuple(model, view, proj);
   }
   void moveFront(GLfloat spd) { pos += spd * (front); }
@@ -76,6 +89,7 @@ class Camera {
   }
 
  private:
+  unsigned int uboMatrices;
   glm::mat4 model, proj, view;
   GLboolean firstEnter;
   GLfloat sensitivity = 0.1f;

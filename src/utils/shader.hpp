@@ -121,6 +121,9 @@ class Shader {
     }
     return this;
   }
+  void BindUBlock() {
+    glUniformBlockBinding(id, glGetUniformBlockIndex(id, "Matrices"), 0);
+  }
   void setPointLights(glm::vec3 pos[], GLint size) {
     std::string s;
     int i = 0;
