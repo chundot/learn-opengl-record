@@ -20,7 +20,7 @@ struct ModelInfo {
   Shader *shader;
   glm::vec3 pos, scale;
   // 描边
-  bool outlined;
+  bool outlined, showNorm;
   glm::vec3 outlineColor;
   ModelInfo(IModel *model, Shader &shader)
       : model(model),
@@ -28,26 +28,28 @@ struct ModelInfo {
         pos(0, -.5f, 0),
         scale(.1f),
         outlined(false),
+        showNorm(false),
         outlineColor(.4f, .7f, .4f){};
 };
 class ModelPainter : public Painter {
  public:
   ModelPainter()
-      : defShader(true, true),
+      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs", true,
+                  true),
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
                           false),
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
         screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
-        testCubeShader("../../shaders/testcube.vs",
-                       "../../shaders/refract.fs") {
-    defShader.load("../../shaders/shader.vs")
-        ->load("../../shaders/explode.gs")
-        ->load("../../shaders/shader.fs")
-        ->link();
+        testCubeShader("../../shaders/testcube.vs", "../../shaders/refract.fs"),
+        normDisplayShader() {
     defShader.texId = skybox.cubemapTexId;
     defShader.use()->setU("skybox", 3);
     defShader.BindUBlock(), singleColorShader.BindUBlock(),
         testCubeShader.BindUBlock();
+    normDisplayShader.load("../../shaders/norm_display.vs")
+        ->load("../../shaders/norm_display.gs")
+        ->load("../../shaders/norm_display.fs")
+        ->link();
   }
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -63,7 +65,6 @@ class ModelPainter : public Painter {
   }
   virtual void terminate() override {}
   virtual void onRender() override {
-    defShader.use()->setU("curTime", (GLfloat)glfwGetTime());
     // 1.
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -188,6 +189,9 @@ class ModelPainter : public Painter {
           ImGui::ColorEdit3((std::string("Outline Color##") + id).c_str(),
                             glm::value_ptr(it->outlineColor));
         }
+        ImGui::Checkbox((std::string("Show Normal##") + id).c_str(),
+                        &it->showNorm);
+
         s.pop_back();
       }
     }
@@ -272,7 +276,7 @@ class ModelPainter : public Painter {
   std::vector<glm::vec3> pointLights;
   std::vector<int> sorted;
   Shader defShader, singleColorShader, simpleShader, screenShader,
-      testCubeShader;
+      testCubeShader, normDisplayShader;
   bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
@@ -331,6 +335,11 @@ class ModelPainter : public Painter {
       }
       glStencilMask(0xFF);
       glEnable(GL_DEPTH_TEST);
+      if (cur.showNorm) {
+        normDisplayShader.use()->setTrans(
+            glm::value_ptr(model), glm::value_ptr(view), glm::value_ptr(proj));
+        cur.model->Draw(normDisplayShader);
+      }
     }
     // 天空盒子渲染
     auto newView = glm::mat4(glm::mat3(view));
