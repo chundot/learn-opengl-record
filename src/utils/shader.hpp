@@ -18,53 +18,12 @@ class Shader {
   Shader(const GLchar *vertexPath, const GLchar *fragmentPath,
          bool hasTexture = true, bool needSkybox = false)
       : hasTexture(hasTexture), needSkybox(needSkybox) {
-    std::ifstream vShaderFile, fShaderFile;
-    std::string vertexCode, fragmentCode;
-    try {
-      // 从文件路径中获取着色器
-      vShaderFile.open(vertexPath), fShaderFile.open(fragmentPath);
-      std::stringstream vShaderStream, fShaderStream;
-      //
-      vShaderStream << vShaderFile.rdbuf(),
-          fShaderStream << fShaderFile.rdbuf();
-      // 关闭文件
-      vShaderFile.close(), fShaderFile.close();
-      // 数据流转换
-      vertexCode = vShaderStream.str(), fragmentCode = fShaderStream.str();
-    } catch (std::ifstream::failure e) {
-      std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
-    }
-    const char *vShaderCode = vertexCode.c_str(),
-               *fShaderCode = fragmentCode.c_str();
-    GLuint vertex, fragment;
     GLint success;
-    GLchar infoLog[512];
-    // 顶点
-    vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vShaderCode, NULL);
-    glCompileShader(vertex);
-    // 错误
-    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-      std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
-                << infoLog << std::endl;
-    }
-    // 片段
-    fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fShaderCode, NULL);
-    glCompileShader(fragment);
-    // 错误
-    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-      std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
-                << infoLog << std::endl;
-    }
+    char infoLog[512];
     // 链接
     id = glCreateProgram();
-    glAttachShader(id, vertex);
-    glAttachShader(id, fragment);
+    auto vertex = loadShaderFile(vertexPath);
+    auto fragment = loadShaderFile(fragmentPath);
     glLinkProgram(id);
     // 打印连接错误（如果有的话）
     glGetProgramiv(id, GL_LINK_STATUS, &success);
@@ -77,8 +36,70 @@ class Shader {
     glDeleteShader(vertex);
     glDeleteShader(fragment);
   }
+  Shader(bool hasTexture = true, bool needSkybox = false) {
+    id = glCreateProgram();
+  }
+  GLuint loadShaderFile(std::string path) {
+    std::ifstream shaderFile;
+    std::string shaderCode;
+    try {
+      shaderFile.open(path);
+      std::stringstream ss;
+      ss << shaderFile.rdbuf();
+      shaderFile.close();
+      shaderCode = ss.str();
+    } catch (std::ifstream::failure) {
+      std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ, PATH: " << path
+                << std::endl;
+    }
+    auto code = shaderCode.c_str();
+    char infoLog[512];
+    GLint success;
+    GLuint shaderId;
+    GLenum t = GL_VERTEX_SHADER;
+    if (path.ends_with(".gs"))
+      t = GL_GEOMETRY_SHADER;
+    else if (path.ends_with(".fs"))
+      t = GL_FRAGMENT_SHADER;
+    // 编译
+    shaderId = glCreateShader(t);
+    glShaderSource(shaderId, 1, &code, NULL);
+    glCompileShader(shaderId);
+    // 错误
+    glGetShaderiv(shaderId, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(shaderId, 512, NULL, infoLog);
+      std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED PATH:" << path
+                << "\n"
+                << infoLog << std::endl;
+    }
+    // 链接
+    glAttachShader(id, shaderId);
+    return shaderId;
+  }
+  Shader *load(std::string path) {
+    auto sid = loadShaderFile(path);
+    shaders.push_back(sid);
+    return this;
+  }
+  Shader *link() {
+    GLint success;
+    char infoLog[512];
+    glLinkProgram(id);
+    // 打印连接错误（如果有的话）
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    if (!success) {
+      glGetProgramInfoLog(id, 512, NULL, infoLog);
+      std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n"
+                << infoLog << std::endl;
+    }
+    // 删除
+    for (auto &shader : shaders) glDeleteShader(shader);
+    return this;
+  }
   // 程序ID
   GLuint id, texId;
+  std::vector<GLuint> shaders;
   // 使用程序
   Shader *use() {
     glUseProgram(id);

@@ -33,14 +33,17 @@ struct ModelInfo {
 class ModelPainter : public Painter {
  public:
   ModelPainter()
-      : defShader("../../shaders/shader.vs", "../../shaders/shader.fs", true,
-                  true),
+      : defShader(true, true),
         singleColorShader("../../shaders/shader.vs", "../../shaders/light.fs",
                           false),
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
         screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
         testCubeShader("../../shaders/testcube.vs",
                        "../../shaders/refract.fs") {
+    defShader.load("../../shaders/shader.vs")
+        ->load("../../shaders/explode.gs")
+        ->load("../../shaders/shader.fs")
+        ->link();
     defShader.texId = skybox.cubemapTexId;
     defShader.use()->setU("skybox", 3);
     defShader.BindUBlock(), singleColorShader.BindUBlock(),
@@ -60,6 +63,7 @@ class ModelPainter : public Painter {
   }
   virtual void terminate() override {}
   virtual void onRender() override {
+    defShader.use()->setU("curTime", (GLfloat)glfwGetTime());
     // 1.
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
