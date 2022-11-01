@@ -103,6 +103,7 @@ class Shader {
   // 使用程序
   Shader *use() {
     glUseProgram(id);
+    setU("reflectSkybox", needSkybox);
     return this;
   }
   // uniform工具

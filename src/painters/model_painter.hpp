@@ -41,7 +41,9 @@ class ModelPainter : public Painter {
         simpleShader("../../shaders/shader.vs", "../../shaders/simple.fs"),
         screenShader("../../shaders/post/def.vs", "../../shaders/post/def.fs"),
         testCubeShader("../../shaders/testcube.vs", "../../shaders/refract.fs"),
-        normDisplayShader() {
+        normDisplayShader(),
+        rock("..\\..\\models\\rock\\rock.obj"),
+        planet("..\\..\\models\\planet\\planet.obj") {
     defShader.texId = skybox.cubemapTexId;
     defShader.use()->setU("skybox", 3);
     defShader.BindUBlock(), singleColorShader.BindUBlock(),
@@ -50,6 +52,7 @@ class ModelPainter : public Painter {
         ->load("../../shaders/norm_display.gs")
         ->load("../../shaders/norm_display.fs")
         ->link();
+    GenPlanets();
   }
   virtual void init() override {
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -70,7 +73,8 @@ class ModelPainter : public Painter {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    DrawScene();
+    // DrawScene();
+    DrawPlanets();
     // 2.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
@@ -270,17 +274,20 @@ class ModelPainter : public Painter {
   }
 
  private:
+  glm::mat4 *modelMatrices = new glm::mat4[1000];
   Skybox skybox;
   unsigned int FBO, textureBuffer, RBO, QVAO, QVBO;
   std::vector<ModelInfo> modelLoaded;
   std::vector<glm::vec3> pointLights;
   std::vector<int> sorted;
   Shader defShader, singleColorShader, simpleShader, screenShader,
-      testCubeShader, normDisplayShader;
-  bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort;
+      testCubeShader, normDisplayShader, rockShader;
+  bool enableSpotLight = false, enableDirLight, wdActive, lockRatio, shouldSort,
+       drawPlanets;
   glm::vec3 dirLightDir = glm::vec3(1);
   float cutOff = 6, outerCutOff = 10;
   int width = 800, height = 600;
+  Model rock, planet;
   void DrawScene() {
     auto camera = *Camera::main;
     auto [_, view, proj] = camera.getMats();
@@ -347,6 +354,45 @@ class ModelPainter : public Painter {
         ->setMat4("projection", glm::value_ptr(proj))
         ->setMat4("view", glm::value_ptr(newView));
     skybox.Draw();
+  }
+  void GenPlanets() {
+    unsigned int amount = 1000;
+    srand((unsigned int)glfwGetTime());
+    float radius = 15;
+    float offset = 2.5;
+    for (unsigned int i = 0; i < amount; ++i) {
+      auto angle = (float)i / (float)amount * 360.0f,
+           displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset,
+           x = sin(angle) * radius + displacement;
+      displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+      auto y = displacement * .4f;
+      displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+      auto z = cos(angle) * radius + displacement;
+      auto model = glm::translate(glm::mat4(1), glm::vec3(x, y, z));
+      float scale = (rand() % 20) / 650.0f + .05;
+      model = glm::scale(model, glm::vec3((float)scale));
+      float rotAngle = (float)(rand() % 360);
+      model = glm::rotate(model, rotAngle, glm::vec3(.4, .6, .8));
+      modelMatrices[i] = model;
+    }
+  }
+  void DrawPlanets() {
+    auto camera = *Camera::main;
+    auto [_, view, proj] = camera.getMats();
+    auto model = glm::translate(glm::mat4(1), glm::vec3(0, .5f, 0));
+    model = glm::scale(model, glm::vec3(.7));
+    defShader.use()
+        ->setU("numPointLights", (int)pointLights.size())
+        ->setF3("viewPos", glm::value_ptr(camera.pos))
+        ->setU("material.shininess", 64.0f)
+        ->setMat4("model", glm::value_ptr(model))
+        ->setPointLights(pointLights, (GLint)pointLights.size());
+    updDirLight(&defShader);
+    planet.Draw(defShader);
+    for (unsigned int i = 0; i < 1000; ++i) {
+      defShader.setMat4("model", glm::value_ptr(modelMatrices[i]));
+      rock.Draw(defShader);
+    }
   }
 };
 #endif
